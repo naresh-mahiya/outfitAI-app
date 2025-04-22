@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Button, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { API_URL } from "./config";
-import { launchImageLibrary } from "react-native-image-picker"; // Import image picker
+// import { launchImageLibrary } from "react-native-image-picker"; // Import image picker
 import { PermissionsAndroid, Platform } from 'react-native';
 
 const Profile = ({ route }) => {
