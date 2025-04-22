@@ -106,7 +106,7 @@ const loginwithgoogle=()=>{
           placeholderTextColor="#ccc"
           value={username}
           onChangeText={setUsername}
-          // defaultValue='adityakurani87@gmail.com'
+          // defaultValue='adityakurani87@gmail.com'  
         />
       )}  
 

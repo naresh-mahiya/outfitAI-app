@@ -54,7 +54,7 @@ app.use("/auth", AuthRoutes);
 app.use("/shop", ShopRoutes);
 app.use("/share", ShareRoutes);
 app.use("/imagegenerate", imageGenerateRoute);
-app.use("/profile", profileRoutes); // 👈 Added this line
+app.use("/profile", profileRoutes);
 
 import clothidentification from '../routes/clothid.js';
 app.use("/clothid", clothidentification);
@@ -62,7 +62,15 @@ app.use("/clothid", clothidentification);
 app.get("/", (req, res) => {
   res.send("This is the main page");
 });
-
+app.get("/imageuploading",(req,res)=>{
+  console.log("done")
+  res.send("Image uploading endpoint")
+})
+app.post("/imageuploading",(req,res)=>{
+  console.log("done in here ")
+  console.log(req.file)
+  res.send("Image uploading endpoint")
+})
 // Socket.io logic
 const onlineUsers = {};
 
@@ -95,8 +103,9 @@ io.on("connection", (socket) => {
 
 // Server listening
 const PORT = process.env.PORT || 3000;
+const ipaddress='192.168.188.21'
 httpServer.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+  console.log(`Server listening on http://${ipaddress}:${PORT}`);
 });
 
 export default app;
