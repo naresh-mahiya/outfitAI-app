@@ -1,19 +1,24 @@
 import express from 'express';
-import authRoutes from './auth.routes.js';
-import connect from './connection.js';
-import profileRoutes from './profilebackend.js'
+import authRoutes from './routes/auth_routes.js';
+import connect from './db/connection.js';
+import profileRoutes from './routes/profilebackend.js'
 import cookieParser from 'cookie-parser';
+
 const app = express();
+
+import dotenv from 'dotenv'
+dotenv.config()
+const mongourl=process.env.MONGO_URI
 app.use(cookieParser())
 app.use(cookieParser());
-
+ 
 app.use(express.json());
 
 app.get("/", (req, res) => {
     res.send("this is listening");
 });
 
-connect("mongodb://localhost:27017/appWardrobe");
+connect(mongourl);
 
 app.use("/auth", authRoutes);
 app.use("/user",profileRoutes)
