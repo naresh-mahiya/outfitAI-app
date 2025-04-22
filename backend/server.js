@@ -3,27 +3,28 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import connect from '../db/connection.js';
+import connect from './db/connection.js';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import UserRoutes from '../routes/user_routes.js';
-import AuthRoutes from '../routes/auth_routes.js';
+import UserRoutes from './routes/user_routes.js';
+import AuthRoutes from './routes/auth_routes.js';
 // import GoogleLoginRoutes from '../routes/auth.google.js';
 // import facebookRoutes from '../routes/auth.facebook.js'
-import ShopRoutes from '../routes/shop.routes.js';
-import Chatbot from '../routes/chat.js';
-import ShareRoutes from '../routes/share.js';
-import imageGenerateRoute from '../routes/image.js';
-import profileRoutes from '../routes/profilebackend.js'; // 👈 Added from second file
+import ShopRoutes from './routes/shop.routes.js';
+import Chatbot from './routes/chat.js';
+import ShareRoutes from './routes/share.js';
+import imageGenerateRoute from './routes/image.js';
+import profileRoutes from './routes/profilebackend.js'; // 👈 Added from second file
 import session from "express-session";
 import passport from "passport";
 import path from 'path';
 import cors from 'cors';
-import connectCloudinary from '../db/cloudinary.js';
+import connectCloudinary from './db/cloudinary.js';
 
 dotenv.config();
 const frontendUrl = process.env.FRONTEND_URL;
 const mongoUri = process.env.MONGO_URI;
+// console.log(mongoUri)
 const app = express();
 const httpServer = http.createServer(app);
 
@@ -56,7 +57,7 @@ app.use("/share", ShareRoutes);
 app.use("/imagegenerate", imageGenerateRoute);
 app.use("/profile", profileRoutes); // 👈 Added this line
 
-import clothidentification from '../routes/clothid.js';
+import clothidentification from './routes/clothid.js';
 app.use("/clothid", clothidentification);
 
 app.get("/", (req, res) => {
@@ -94,7 +95,8 @@ io.on("connection", (socket) => {
 });
 
 // Server listening
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
+console.log()
 httpServer.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });

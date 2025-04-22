@@ -12,45 +12,45 @@ import Upload from './Components/upload'
 // Screens
 // import Auth from './components/Auth/Auth';
 // import Profile from './components/Profile/Profile';
-import Homepage from './components/Homepage';
-import Wardrobe from './components/Wardrobe';
-import Shop from './components/Shop';
-import Recommendations from './components/Recommendations';
-import Chatbot from './components/Chatbot/Chatbot';
-import CelebrityNews from './components/CelebrityNews';
-import SellCloth from './components/Sellcloth';
-import Message from './components/message';
-import Planner from './components/Planner';
-import Image from './components/Image';
-import ShareClothes from './components/ShareClothes';
-import DiscoverTrends from './components/DiscoverTrends';
-import DevelopersPage from './components/Developers';
-import Features from './components/Features.js';
-import AboutUs from './components/AboutUs.js';
-import Wishlist from './components/Wishlist';
-import NotFound from './components/NotFound';
+// import Homepage from './components/Homepage';
+// import Wardrobe from './components/Wardrobe';
+// import Shop from './components/Shop';
+// import Recommendations from './components/Recommendations';
+// import Chatbot from './components/Chatbot/Chatbot';
+// import CelebrityNews from './components/CelebrityNews';
+// import SellCloth from './components/Sellcloth';
+// import Message from './components/message';
+// import Planner from './components/Planner';
+// import Image from './components/Image';
+// import ShareClothes from './components/ShareClothes';
+// import DiscoverTrends from './components/DiscoverTrends';
+// import DevelopersPage from './components/Developers';
+// import Features from './components/Features.js';
+// import AboutUs from './components/AboutUs.js';
+// import Wishlist from './components/Wishlist';
+// import NotFound from './components/NotFound';
 
-// Common components
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import ChatButton from './components/ChatButton';
+// // Common components
+// import Navbar from './components/Navbar';
+// import Footer from './components/Footer';
+// import ChatButton from './components/ChatButton';
 
 const Stack = createStackNavigator();
  
 const App = () => {
   return (
     <NavigationContainer>
-      <Navbar />
-      <ChatButton />
+      {/* <Navbar />
+      <ChatButton /> */}
       <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Login" component={Auth} />
         <Stack.Screen name="Profile" component={Profile} />
-        {/* <Stack.Screen name="Upload" component={Upload} /> */}
+        <Stack.Screen name="Upload" component={Upload} />
 
         {/* copied */}
         {/* <Stack.Screen name="Login" component={Auth} />
         <Stack.Screen name="Profile" component={Profile} /> */}
-        <Stack.Screen name="Homepage" component={Homepage} />
+        {/* <Stack.Screen name="Homepage" component={Homepage} />
         <Stack.Screen name="Wardrobe" component={Wardrobe} />
         <Stack.Screen name="Shop" component={Shop} />
         <Stack.Screen name="ARPreview" component={AR} />
@@ -67,10 +67,10 @@ const App = () => {
         <Stack.Screen name="Features" component={Features} />
         <Stack.Screen name="AboutUs" component={AboutUs} />
         <Stack.Screen name="Wishlist" component={Wishlist} />
-        <Stack.Screen name="NotFound" component={NotFound} />
+        <Stack.Screen name="NotFound" component={NotFound} /> */}
 
       </Stack.Navigator>
-      <Footer />
+      {/* <Footer /> */}
     </NavigationContainer>
   );
 };

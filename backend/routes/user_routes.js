@@ -3,11 +3,14 @@ import jwt from "jsonwebtoken"; // No need to import SECRET_KEY, as it's already
 import multer from "multer";
 const router = express.Router();
 import User from "../model/user.js";
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import path from "path";
+import dotenv from 'dotenv'
 import { v2 as cloudinary } from "cloudinary";
+dotenv.config()
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-
+// console.log('env is ', process.env.GOOGLE_API_KEY)
+// console.log("monog is ",process.env.PORT)
 const inputPrompt = `
 List all the clothing items visible in this image.
 Format each item as:
@@ -46,7 +49,7 @@ const authenticate = (req, res, next) => {
     console.log("error");
     res.status(401).json({ msg: "Token is not valid" });
   }
-}; 
+};
 router.get("/profile", (req, res) => {
   console.log("Cookies received:", req.cookies);
   const tokenlogin = req.cookies.tokenlogin;
@@ -118,73 +121,6 @@ router.get("/images", async (req, res) => {
   }
 });
 
-router.post("/updatepassword", authenticate, async (req, res) => {
-  const userid = req.user.id;
-
-  const newpassword = req.body.newpassword;
-  if (!newpassword) {
-    return res.status(400).json({ error: "Please enter new password" });
-  }
-  const user = await User.findById(userid);
-  user.password = newpassword;
-  user.save();
-  res.json({ status: true, msg: "Password done" });
-});
-
-router.post("/updateinfo", authenticate, async (req, res) => {
-  const userid = req.user.id;
-  console.log(req.body);
-  const age = req.body.age;
-  const gender = req.body.gender;
-  const prefference = req.body.preferences;
-  const user = await User.findById(userid);
-  user.age = age;
-  user.gender = gender;
-  user.preferences = prefference;
-  user.save();
-  res.json({ status: true, msg: "Info done" });
-});
-
-router.get("/getuserdetails", authenticate, async (req, res) => {
-  const userid = req.user.id;
-  const user = await User.findById(userid);
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
-  res.json({
-    age: user.age,
-    preferences: user.preferences,
-    gender: user.gender,
-  });
-});
-
-import Wishlist from "../model/addtowishlist.js";
-router.get("/getwishlist", authenticate, async (req, res) => {
-  const id = req.user.id;
-  console.log(id);
-  const wishlist = await Wishlist.find({ userid: id });
-  res.json(wishlist);
-});
-
-// import { fileURLToPath } from "url";
-
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     const uploadPath = path.join(__dirname, "../uploads");
-//     console.log("Saving file to:", uploadPath);
-//     cb(null, uploadPath);
-//   },
-//   filename: (req, file, cb) => {
-//     const filename = `${Date.now()}-${file.originalname}`;
-//     console.log("Generated filename:", filename);
-//     cb(null, filename);
-//   },
-// });
-
-// const upload = multer({ storage });
-
 const storage = multer.diskStorage({
   filename: function (req, file, callback) {
     callback(null, file.originalname);
@@ -197,8 +133,8 @@ router.post(
   "/upload-image",
   upload.single("wardrobeImage"),
   async (req, res) => {
-    console.log("it is here")
-    console.log(req.file)
+    console.log("it is here");
+    console.log(req.file);
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -235,238 +171,50 @@ router.post(
   }
 );
 
-router.post("/clothesUpload", async (req, res) => {
-  // console.log("Clothes upload data:", req.body.clothes); // ✅ Debugging log
+const memoryUpload = multer({ storage: multer.memoryStorage() });
 
-  // Check if clothes data is sent in the request body
-  if (!req.body.clothes) {
-    return res.status(400).json({ error: "No clothes data received" });
-  }
-
-  const uploadclothes = req.body.clothes;
-  const token = req.cookies.tokenlogin;
-
-  // If token is missing, return an error
-  if (!token) {
-    return res.status(401).json({ error: "No token in the headers" });
-  }
-
-  try {
-    // Decode the JWT token
-    const decoded = jwt.verify(token, process.env.SECRET_KEY); // Ensure SECRET_KEY is defined in .env
-    // console.log("Decoded token:", decoded);
-
-    // Find the user by their username
-    const user = await User.findOne({ username: decoded.username });
-    if (!user) {
-      return res.status(404).json({ msg: "User not found" });
-    }
-
-    console.log("upload clothes:", uploadclothes);
-    let finalclothestoupload = "";
-
-    uploadclothes.map((cloth) => {
-      finalclothestoupload += `${cloth.item} (${cloth.color}), `;
-    });
-    console.log('final is ', finalclothestoupload)
-    user.clothes.push(finalclothestoupload);
-    await user.save();
-
-    // Send success response
-    res.status(200).json({
-      message: "Clothes data received successfully",
-      data: uploadclothes,
-    });
-  } catch (error) {
-    console.error("JWT verification failed:", error);
-    return res.status(403).json({ error: "Invalid or expired token" }); // Handle JWT errors
-  }
-});
-
-import cloth from "../model/cloth.js";
-const uploadcloth = multer({ storage });
 router.post(
-  "/sellcloth",
-  authenticate,
-  uploadcloth.single("image"),
+  "/classify-image",
+  memoryUpload.single("wardrobeImage"),
   async (req, res) => {
-    let imageUrl;
+    console.log('file details',req.file)
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: "No image uploaded" });
+    }
+
     try {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        resource_type: "image",
-        folder: "uploadscloths",
+      console.log("in try block")
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const result = await model.generateContent([
+        inputPrompt,
+        {
+          inlineData: {
+            mimeType: file.mimetype,
+            data: file.buffer.toString("base64"),
+          },
+        },
+      ]);
+      // console.log(result);
+      const responseText = result.response.text();
+      if (typeof responseText !== "string") {
+        return res.status(500).json({ error: "AI response is not a string" });
+      }
+
+      const clothingItems = parseClothingList(responseText);
+
+      // Send back the classified items
+      res.json({
+        filename: file.originalname,
+        clothing_items: clothingItems,
       });
-      imageUrl = result.secure_url;
-    } catch (error) {
-      throw new BadRequestError("Image upload failed");
+    } catch (err) {
+      console.error(`Error processing ${file.originalname}:`, err);
+      res.status(500).json({ error: err.message });
     }
-    const description = req.body.description;
-    const price = req.body.price;
-    console.log(req.body);
-    // console.log("File info:", file);
-    console.log("description", description);
-    console.log("user info", req.user);
-    const uploadclothdb = await cloth.create({
-      userid: req.user.id,
-      username: req.user.username,
-      price: price,
-      clothImage: imageUrl,
-      description: description,
-    });
-    if (!uploadclothdb) {
-      console.log("couldnt");
-      res.json({ msg: "cant insert in the database" });
-    }
-    console.log("done");
-    res.json("File uploaded successfully");
   }
 );
 
-router.get("/allClothesSell", authenticate, async (req, res) => {
-  console.log("userdetaios", req.user);
-  const userid = req.user.id;
-  const cloths = await cloth.find({ userid: { $ne: userid } });
-
-  const usercloth = await cloth.find({ userid: userid });
-  const clothsdata = { cloths, usercloth };
-  res.send(clothsdata);
-});
-
-import message from "../model/message.js";
-
-// Use in Route
-// In user_routes.js
-router.post("/message", authenticate, async (req, res) => {
-  try {
-    const sender = req.user.username;
-    const { message: messagebody, recipient } = req.body;
-
-    // Store in DB
-    const messageInsert = await message.create({
-      message: messagebody,
-      sender,
-      recipient,
-    });
-
-    // Emit message if recipient is online
-
-    res.json({ msg: "Message sent successfully", message: messageInsert });
-  } catch (error) {
-    console.error("Error in /message route:", error);
-    res
-      .status(500)
-      .json({ error: "Message sending failed", details: error.message });
-  }
-});
-router.get("/clothsforweek", authenticate, async (req, res) => {
-  const userid = req.user.id;
-
-  try {
-    const user = await User.findById(userid);
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const clothforweekdata = user.clothessuggestionforweek;
-    const favourites = user.favourites;
-    res.json({ clothforweek: clothforweekdata, favourites: favourites });
-  } catch (err) {
-    console.error("Error fetching clothes for week:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-router.post("/copytoprofileweekcloths", authenticate, async (req, res) => {
-  const userid = req.user.username;
-  console.log("User details of clothes:", userid);
-
-  const user = await User.findOne({ username: userid }); // <- changed to findOne
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
-
-  // console.log('User is final:', user);
-  // console.log('Weekly clothes to save:', req.body.clothesforweek);
-
-  user.clothessuggestionforweek = req.body.clothesforweek;
-  await user.save();
-
-  res.status(200).json({ message: "Weekly clothing suggestion saved!" });
-});
-
-router.post("/addnewcloths", authenticate, async (req, res) => {
-  const userid = req.user.id;
-  console.log(req.body);
-  const user = await User.findById(userid);
-  const clothdata = req.body.clothname;
-  if (user.clothes[0]) {
-    console.log("saved");
-    user.clothes[0] += `\n , ${clothdata} , `;
-  } else {
-    console.log("not saved");
-    user.clothes[0] = clothdata + " ";
-  }
-  await user.save();
-
-  res.json({ message: "cloth saved to the user" });
-});
-// Fetch Cloth Details
-router.get("/sellcloth/find/:id", async (req, res) => {
-  const id = req.params.id;
-  const clothid = await cloth.findById(id);
-  res.send(clothid);
-});
-
-// Fetch Messages
-router.get("/message/:username", authenticate, async (req, res) => {
-  const receivername = req.params.username;
-  const sendername = req.user.username;
-
-  const messages = await message.find({
-    $or: [
-      { recipient: receivername, sender: sendername },
-      { recipient: sendername, sender: receivername },
-    ],
-  });
-
-  res.send(messages);
-});
-
-router.post("/soldcloth/delete/:clothid", async (req, res) => {
-  const clothid = req.params.clothid;
-  console.log(clothid);
-  const clothfind = await cloth.findByIdAndDelete(clothid);
-  res.json({ message: "cloth deleted successfully" });
-});
-// prevent
-router.post("/cloth/lovesuggestion/save", authenticate, async (req, res) => {
-  const userid = req.user.id;
-  console.log(userid);
-  const cloths = req.body.clothsuggestion;
-  console.log(cloths);
-  const user = await User.findById(userid);
-  if (!user) {
-    res.status(404).json({ msg: "no user found" });
-    return;
-  }
-  if (!user.favourites.includes(cloths)) {
-    user.favourites.push(cloths);
-  }
-
-  await user.save();
-  res.status(200).json({ msg: "Suggestion saved to favourites" });
-});
-
-router.post("/cloth/deletefavourite", authenticate, async (req, res) => {
-  const userid = req.user.id;
-  const cloths = req.body.clothsuggestion;
-  const user = await User.findById(userid);
-  if (!user) {
-    res.status(404).json({ msg: "no user found" });
-  }
-  user.favourites.pull(cloths);
-  await user.save();
-  res.status(200).json({ favourite: user.favourites });
-});
 export default router;

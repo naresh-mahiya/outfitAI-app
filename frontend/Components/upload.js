@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Button, Image, Alert } from 'react-native';
+import { View, Button, Image, Alert, Text, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 
 const Profile = () => {
   const [imageUri, setImageUri] = useState(null);
+  const [clothingItems, setClothingItems] = useState([]);
 
   const handleUpload = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -19,48 +20,66 @@ const Profile = () => {
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-      console.log('Selected image:', result.assets[0].uri);
+      const asset = result.assets[0];
+      const localUri = asset.uri;
+      const name = asset.fileName || 'image.jpg';
+      const type = 'image/jpeg';
 
-      const localUri = result.assets[0].uri;
-      const type = result.assets[0].type; // e.g., 'image/jpeg'
-      const name = result.assets[0].fileName || 'image.jpg'; // Use default filename if not available
+      setImageUri(localUri);
 
-      // Send the image to the backend
       const formData = new FormData();
-      formData.append('wardrobeImage', {  // Use the correct field name
+      formData.append('wardrobeImage', {
         uri: localUri,
-        type: 'image/jpeg',
+        type: type,
         name: name,
       });
 
       try {
-        // Replace with your backend URL
+        // Upload image to the backend
         const response = await axios.post('http://192.168.188.21:3000/user/upload-image', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          withCredentials:true
+          withCredentials: true,
         });
+
         console.log('Image uploaded successfully:', response.data);
+
+        // After uploading, classify the image to get clothing items
+        const classificationResponse = await axios.post('http://192.168.188.21:3000/user/classify-image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          withCredentials: true,
+        });
+
+        console.log('AI Classification Result:', classificationResponse.data);
+        setClothingItems(classificationResponse.data.clothing_items || []);
       } catch (error) {
-        console.error('Error uploading image:', error.message);
-        console.log(error.config);
-        Alert.alert('Error', 'Failed to upload the image');
+        console.error('Error uploading or classifying image:', error.message);
+        Alert.alert('Error', 'Failed to upload and classify the image.');
       }
     }
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Button title="Upload Image" onPress={handleUpload} />
+    <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <Button title="Upload & Classify Image" onPress={handleUpload} />
       {imageUri && (
         <Image
           source={{ uri: imageUri }}
-          style={{ width: 200, height: 200, marginTop: 20 }}
+          style={{ width: 200, height: 200, marginTop: 20, borderRadius: 10 }}
         />
       )}
-    </View>
+      {clothingItems.length > 0 && (
+        <View style={{ marginTop: 20, width: '100%' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Clothing Items Detected:</Text>
+          {clothingItems.map((item, index) => (
+            <Text key={index}>• {item.item}: {item.color}</Text>
+          ))}
+        </View>
+      )}
+    </ScrollView>
   );
 };
 
