@@ -3,8 +3,31 @@ import jwt from "jsonwebtoken"; // No need to import SECRET_KEY, as it's already
 import multer from "multer";
 const router = express.Router();
 import User from "../model/user.js";
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import path from "path";
 import { v2 as cloudinary } from "cloudinary";
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+const inputPrompt = `
+List all the clothing items visible in this image.
+Format each item as:
+* Item: Color
+Only list items. Do not describe the background or image style.
+`;
+
+// Utility to parse text
+function parseClothingList(text) {
+  const items = [];
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const match = line.match(/^\*\s*(\w+):\s*(.+)/);
+    if (match) {
+      items.push({ item: match[1].trim(), color: match[2].trim() });
+    }
+  }
+  return items;
+}
+
 const authenticate = (req, res, next) => {
   const token = req.cookies.tokenlogin;
   // console.log("toke is ", token)
@@ -174,6 +197,8 @@ router.post(
   "/upload-image",
   upload.single("wardrobeImage"),
   async (req, res) => {
+    console.log("it is here")
+    console.log(req.file)
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 

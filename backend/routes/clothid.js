@@ -32,7 +32,7 @@ function parseClothingList(text) {
 router.get("/", (req, res) => {
   res.send("Welcome to the clothing classification API!");
 });
-
+ 
 // POST route for image classification
 router.post("/classify", upload.single("images"), async (req, res) => {
   const file = req.file;

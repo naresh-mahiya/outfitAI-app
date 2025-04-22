@@ -20,7 +20,7 @@ import passport from "passport";
 import path from 'path';
 import cors from 'cors';
 import connectCloudinary from '../db/cloudinary.js';
-
+import multer from 'multer';
 dotenv.config();
 const frontendUrl = process.env.FRONTEND_URL;
 const mongoUri = process.env.MONGO_URI;
@@ -66,11 +66,7 @@ app.get("/imageuploading",(req,res)=>{
   console.log("done")
   res.send("Image uploading endpoint")
 })
-app.post("/imageuploading",(req,res)=>{
-  console.log("done in here ")
-  console.log(req.file)
-  res.send("Image uploading endpoint")
-})
+
 // Socket.io logic
 const onlineUsers = {};
 
@@ -100,6 +96,29 @@ io.on("connection", (socket) => {
     }
   });
 });
+
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Save files to the "uploads" folder
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Rename the file with a timestamp and original extension
+  }
+});
+
+const upload = multer({ storage: storage });
+
+app.post("/imageuploading", upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send("No file uploaded.");
+  }
+
+  console.log("File uploaded:", req.file);
+  res.send("Image uploaded successfully");
+});
+
 
 // Server listening
 const PORT = process.env.PORT || 3000;

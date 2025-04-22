@@ -22,42 +22,30 @@ const Profile = () => {
       setImageUri(result.assets[0].uri);
       console.log('Selected image:', result.assets[0].uri);
 
-      // Convert the image to a format the backend can accept (base64 or file)
       const localUri = result.assets[0].uri;
       const type = result.assets[0].type; // e.g., 'image/jpeg'
       const name = result.assets[0].fileName || 'image.jpg'; // Use default filename if not available
 
-      // Fetch image data in base64 format (you can also send it as a file)
-      const base64 = await fetch(localUri)
-        .then((response) => response.blob())
-        .then((blob) => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        });
-
       // Send the image to the backend
       const formData = new FormData();
-      formData.append('file', {
+      formData.append('wardrobeImage', {  // Use the correct field name
         uri: localUri,
         type: 'image/jpeg',
-        name: 'photo.jpg',
+        name: name,
       });
 
       try {
         // Replace with your backend URL
-        const response = await axios.post('http://192.168.188.21:3000/imageuploading', formData, {
+        const response = await axios.post('http://192.168.188.21:3000/user/upload-image', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          withCredentials:true
         });
         console.log('Image uploaded successfully:', response.data);
       } catch (error) {
         console.error('Error uploading image:', error.message);
-        console.log(error.config)
+        console.log(error.config);
         Alert.alert('Error', 'Failed to upload the image');
       }
     }

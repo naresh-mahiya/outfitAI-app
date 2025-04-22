@@ -50,55 +50,9 @@ const Profile = ({ route }) => {
 
 
 
-
-const requestGalleryPermission = async () => {
-  if (Platform.OS === 'android') {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-        {
-          title: "Gallery Permission",
-          message: "App needs access to your gallery",
-          buttonNeutral: "Ask Me Later",
-          buttonNegative: "Cancel",
-          buttonPositive: "OK",
-        }
-      );
-
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  } else {
-    return true;
-  }
-};
-
-const handleImageUpload = async () => {
-  console.log("Upload button clicked!");
-
-  const hasPermission = await requestGalleryPermission();
-  if (!hasPermission) {
-    console.log("Permission denied");
-    return;
-  }
-
-  launchImageLibrary({ mediaType: 'photo', quality: 1 }, (response) => {
-    console.log("Image Picker Response:", response);
-
-    if (response.didCancel) {
-      console.log("User cancelled image picker");
-    } else if (response.errorCode) {
-      console.log("ImagePicker Error: ", response.errorMessage);
-    } else if (response.assets && response.assets.length > 0) {
-      const image = response.assets[0];
-      const source = { uri: image.uri };
-      setProfileImage(source);
-      console.log("Selected image:", source);
-    }
-  });
-};
+const handleImageUpload = () => {
+navigation.navigate("Upload",{token:token})
+}
 
   
   
