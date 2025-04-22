@@ -22,7 +22,7 @@ const Profile = ({ route }) => {
       return;
     }
 
-    fetch(`${backendUrl}/user/profile`, {
+    fetch(`${backendUrl}/profile/profile`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

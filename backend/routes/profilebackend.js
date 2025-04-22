@@ -26,10 +26,10 @@ console.log('toke is ',token)
     res.status(401).json({ msg: "Token is not valid" });
   }
 };
- 
+  
 // Protected route
 router.get("/profile", authenticate, async (req, res) => {
-    // cconsole.log("profiule secioptn")
+    console.log("profiule secioptn")
   try {
     const userid = req.user.id;
     const user = await User.findById(userid).select('-password'); 
