@@ -1,28 +1,43 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
-  Button,
   Image,
   TextInput,
   ScrollView,
   TouchableOpacity,
   Modal,
   FlatList,
+  Dimensions,
+  Animated,
+  SafeAreaView,
+  StatusBar,
+  Button,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { API_URL } from "./config";
 import { PermissionsAndroid, Platform } from "react-native";
 
+const { width, height } = Dimensions.get('window');
+
 const Profile = ({ route }) => {
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('profile');
+  
+  // User data state
   const [userData, setUserData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
   const [clothes, setClothes] = useState([]);
   const [showClothes, setShowClothes] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -39,6 +54,9 @@ const Profile = ({ route }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Gender options
   const genderOptions = [
@@ -52,6 +70,23 @@ const Profile = ({ route }) => {
   const backendUrl = API_URL;
   const token = route.params?.token;
 
+  // Animation effect on component mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
+
+  // Fetch profile data on mount
   useEffect(() => {
     if (token) {
       profiledetails();
@@ -61,11 +96,28 @@ const Profile = ({ route }) => {
     }
   }, [token]);
 
+  // Fetch clothes data on mount
   useEffect(() => {
     if (token) {
       getclothes();
     }
   }, [token]);
+  
+  // Animation when switching tabs
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0.5,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [activeTab]);
 
   const profiledetails = () => {
     if (!token) {
@@ -310,394 +362,305 @@ const Profile = ({ route }) => {
       setPasswordSubmitting(false);
     });
   };
-
   
-  return (
-    <View style={styles.container}>
-      <Text style={styles.headerText}>Profile</Text>
+  // Render tab content based on active tab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return (
+          <Animated.View 
+            style={[styles.tabContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+          >
+            {/* Profile Image */}
+            {profileImage ? (
+              <Image source={profileImage} style={styles.profileImage} />
+            ) : (
+              <View style={styles.profileImagePlaceholder}>
+                <Text style={styles.profileImagePlaceholderText}>
+                  {userData && userData.username ? userData.username.charAt(0).toUpperCase() : '?'}
+                </Text>
+              </View>
+            )}
+            
+            {/* User Info */}
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Username</Text>
+                <Text style={styles.infoValue}>{userData ? userData.username : "Not available"}</Text>
+              </View>
+              
+              <View style={styles.divider} />
+              
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{userData ? userData.email : "Not available"}</Text>
+              </View>
+              
+              {userData && userData.age && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Age</Text>
+                    <Text style={styles.infoValue}>{userData.age}</Text>
+                  </View>
+                </>
+              )}
+              
+              {userData && userData.gender && userData.gender !== 'prefer-not-to-say' && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Gender</Text>
+                    <Text style={styles.infoValue}>
+                      {userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1)}
+                    </Text>
+                  </View>
+                </>
+              )}
+              
+              {userData && userData.preferences && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Style Preferences</Text>
+                    <Text style={styles.infoValue}>{userData.preferences}</Text>
+                  </View>
+                </>
+              )}
+            </View>
+            
+            {/* Profile Actions */}
+            <TouchableOpacity style={styles.actionButton} onPress={toggleForm}>
+              <Text style={styles.actionButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+        
+      case 'clothes':
+        return (
+          <Animated.View 
+            style={[styles.tabContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+          >
+            <View style={styles.clothesHeader}>
+              <Text style={styles.clothesTitle}>My Wardrobe</Text>
+              <TouchableOpacity 
+                style={styles.addClothesButton}
+                onPress={navigatetowardorbe}
+              >
+                <Text style={styles.addClothesButtonText}>+ Add Clothes</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {clothes.length > 0 ? (
+              <FlatList
+                data={clothes}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item, index }) => (
+                  <View style={styles.clothCard}>
+                    <Text style={styles.clothText}>{item}</Text>
+                  </View>
+                )}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.clothesList}
+              />
+            ) : (
+              <View style={styles.emptyStateContainer}>
+                <View style={styles.emptyIconContainer}>
+                  <Text style={styles.emptyIcon}>👕</Text>
+                </View>
+                <Text style={styles.emptyStateTitle}>No clothes yet</Text>
+                <Text style={styles.emptyStateText}>Add some clothes to your wardrobe to get started</Text>
+                <TouchableOpacity 
+                  style={styles.emptyStateButton}
+                  onPress={navigatetowardorbe}
+                >
+                  <Text style={styles.emptyStateButtonText}>Add Your First Item</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Animated.View>
+        );
+        
+      case 'settings':
+        return (
+          <Animated.View 
+            style={[styles.tabContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+          >
+            <View style={styles.settingsCard}>
+              <TouchableOpacity style={styles.settingsItem} onPress={togglePasswordForm}>
+                <View style={styles.settingsItemContent}>
+                  <Text style={styles.settingsItemText}>Change Password</Text>
+                  <Text style={styles.settingsItemIcon}>›</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <View style={styles.settingsDivider} />
+              
+              <TouchableOpacity style={styles.settingsItem}>
+                <View style={styles.settingsItemContent}>
+                  <Text style={styles.settingsItemText}>Notifications</Text>
+                  <Text style={styles.settingsItemIcon}>›</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <View style={styles.settingsDivider} />
+              
+              <TouchableOpacity style={styles.settingsItem}>
+                <View style={styles.settingsItemContent}>
+                  <Text style={styles.settingsItemText}>Privacy Settings</Text>
+                  <Text style={styles.settingsItemIcon}>›</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <View style={styles.settingsDivider} />
+              
+              <TouchableOpacity style={styles.settingsItem}>
+                <View style={styles.settingsItemContent}>
+                  <Text style={styles.settingsItemText}>Help & Support</Text>
+                  <Text style={styles.settingsItemIcon}>›</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <View style={styles.settingsDivider} />
+              
+              <TouchableOpacity style={styles.settingsItem}>
+                <View style={styles.settingsItemContent}>
+                  <Text style={styles.settingsItemText}>About OutfitAI</Text>
+                  <Text style={styles.settingsItemIcon}>›</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+        
+      default:
+        return null;
+    }
+  };
 
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+      
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Fetching your profile...</Text>
+          <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
       ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
-      ) : (
-        <View style={styles.profileCard}>
-          {profileImage ? (
-            <Image 
-              source={profileImage} 
-              style={styles.profileImage} 
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.profileImagePlaceholder}>
-              <Text style={styles.profileImagePlaceholderText}>
-                {userData && userData.username ? userData.username.charAt(0).toUpperCase() : '?'}
-              </Text>
-            </View>
-          )}
-          <Text style={styles.profileText}>Username: {userData && userData.username}</Text>
-          <Text style={styles.profileText}>Email: {userData && userData.email}</Text>
-          
-          <View style={styles.buttonContainer}>
-            <View style={styles.buttonWrapper}>
-              <Button 
-                title="My Wardrobe" 
-                onPress={navigatetowardorbe} 
-                color="#e74c3c" 
-              />
-            </View>
-            <View style={styles.buttonWrapper}>
-              <Button 
-                title="Upload" 
-                onPress={handleImageUpload} 
-                color="#3498db" 
-              />
-            </View>
-          </View>
-          
-          <View style={styles.profileActionContainer}>
-            <Button
-              title="Update Profile Info"
-              onPress={toggleForm}
-              color="#2ecc71"
-            />
-          </View>
-          
-          <View style={styles.profileActionContainer}>
-            <Button
-              title="Change Password"
-              onPress={togglePasswordForm}
-              color="#3498db"
-            />
-          </View>
-          
-          <View style={styles.logoutContainer}>
-            <Button
-              title="Logout"
-              onPress={handleLogout}
-              color="#95a5a6"
-            />
-          </View>
-          
-          {/* Profile Update Form Modal */}
-          <Modal
-            visible={showForm}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={toggleForm}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.formContainer}>
-                <Text style={styles.formTitle}>Update Profile</Text>
-                
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Age</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={age.toString()}
-                    onChangeText={setAge}
-                    keyboardType="number-pad"
-                    placeholder="Enter your age"
-                    placeholderTextColor="#888"
-                  />
-                </View>
-                
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Gender</Text>
-                  <TouchableOpacity 
-                    style={styles.dropdownButton}
-                    onPress={() => setShowGenderDropdown(!showGenderDropdown)}
-                  >
-                    <Text style={styles.dropdownButtonText}>{genderLabel}</Text>
-                  </TouchableOpacity>
-                  
-                  {showGenderDropdown && (
-                    <View style={styles.dropdownList}>
-                      {genderOptions.map((option) => (
-                        <TouchableOpacity
-                          key={option.value}
-                          style={[styles.dropdownItem, gender === option.value && styles.selectedDropdownItem]}
-                          onPress={() => handleSelectGender(option.value, option.label)}
-                        >
-                          <Text style={[styles.dropdownItemText, gender === option.value && styles.selectedDropdownItemText]}>
-                            {option.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Style Preferences</Text>
-                  <TextInput
-                    style={[styles.formInput, styles.textArea]}
-                    value={preferences}
-                    onChangeText={setPreferences}
-                    placeholder="Describe your style preferences..."
-                    placeholderTextColor="#888"
-                    multiline
-                    numberOfLines={4}
-                  />
-                </View>
-                
-                <View style={styles.formActions}>
-                  <TouchableOpacity 
-                    style={[styles.formButton, styles.cancelButton]} 
-                    onPress={toggleForm}
-                    disabled={formSubmitting}
-                  >
-                    <Text style={styles.buttonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.formButton, styles.saveButton, formSubmitting && styles.disabledButton]} 
-                    onPress={handleUpdateProfile}
-                    disabled={formSubmitting}
-                  >
-                    <Text style={styles.buttonText}>
-                      {formSubmitting ? 'Saving...' : 'Save Changes'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
-          
-                        <Modal
-            visible={showPasswordForm}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={togglePasswordForm}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.formContainer}>
-                <Text style={styles.formTitle}>Change Password</Text>
-                
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Current Password</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={currentPassword}
-                    onChangeText={setCurrentPassword}
-                    secureTextEntry={true}
-                    placeholder="Enter current password"
-                    placeholderTextColor="#888"
-                  />
-                </View>
-                
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>New Password</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    secureTextEntry={true}
-                    placeholder="Enter new password"
-                    placeholderTextColor="#888"
-                  />
-                </View>
-                
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Confirm New Password</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={true}
-                    placeholder="Confirm new password"
-                    placeholderTextColor="#888"
-                  />
-                </View>
-                
-                <View style={styles.formActions}>
-                  <TouchableOpacity 
-                    style={[styles.formButton, styles.cancelButton]} 
-                    onPress={togglePasswordForm}
-                    disabled={passwordSubmitting}
-                  >
-                    <Text style={styles.buttonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.formButton, styles.saveButton, passwordSubmitting && styles.disabledButton]} 
-                    onPress={handleChangePassword}
-                    disabled={passwordSubmitting}
-                  >
-                    <Text style={styles.buttonText}>
-                      {passwordSubmitting ? 'Changing...' : 'Change Password'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
-          
-          <View style={styles.toggleContainer}>
-            <Button 
-              title={showClothes ? "Hide My Clothes" : "Show My Clothes"} 
-              onPress={() => setShowClothes(!showClothes)} 
-              color="#2980b9"
-            />
-          </View>
-          {showClothes && (
-            <View style={styles.clothesContainer}>
-              <Text style={styles.sectionTitle}>My Clothes</Text>
-              {Array.isArray(clothes) && clothes.length > 0 ? (
-                clothes.map((item, index) => {
-                  const isLongText = item.length > 100;
-                  const displayText = isLongText ? item.substring(0, 97) + '...' : item;
-                  
-                  return (
-                    <View key={index} style={styles.clothItem}>
-                      <Text style={styles.clothText}>{displayText}</Text>
-                      {isLongText && (
-                        <TouchableOpacity 
-                          onPress={() => alert(item)}
-                          style={styles.expandButton}
-                        >
-                          <Text style={styles.expandButtonText}>View Full</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  );
-                })
-              ) : (
-                <Text style={styles.noClothesText}>No clothes found</Text>
-              )}
-            </View>
-          )}
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.errorButton} onPress={handleLogout}>
+            <Text style={styles.errorButtonText}>Go to Login</Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
+      ) : (
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerText}>My Profile</Text>
+          </View>
+          
+          {/* Tab Navigation */}
+          <View style={styles.tabBar}>
+            <TouchableOpacity 
+              style={[styles.tabItem, activeTab === 'profile' && styles.activeTabItem]}
+              onPress={() => setActiveTab('profile')}
+            >
+              <Text style={[styles.tabText, activeTab === 'profile' && styles.activeTabText]}>Profile</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.tabItem, activeTab === 'clothes' && styles.activeTabItem]}
+              onPress={() => setActiveTab('clothes')}
+            >
+              <Text style={[styles.tabText, activeTab === 'clothes' && styles.activeTabText]}>Clothes</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.tabItem, activeTab === 'settings' && styles.activeTabItem]}
+              onPress={() => setActiveTab('settings')}
+            >
+              <Text style={[styles.tabText, activeTab === 'settings' && styles.activeTabText]}>Settings</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Tab Content */}
+          <ScrollView 
+            style={styles.contentContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {renderTabContent()}
+          </ScrollView>
+        </>
+      </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#181818",
-    padding: 20,
+    backgroundColor: '#121212',
   },
-  clothesContainer: {
-    width: '100%',
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  toggleContainer: {
-    width: '100%',
-    marginVertical: 15,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    width: '100%',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  buttonWrapper: {
-    width: '48%',
-  },
-  logoutContainer: {
-    width: '100%',
-    marginTop: 30,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  clothItem: {
-    backgroundColor: '#3a3a3a',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  clothText: {
-    fontSize: 16,
-    color: '#fff',
-    flex: 1,
-  },
-  expandButton: {
-    backgroundColor: '#2980b9',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginLeft: 10,
-  },
-  expandButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  clothImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 5,
-  },
-  noClothesText: {
-    fontSize: 16,
-    color: '#aaa',
-    textAlign: 'center',
-    fontStyle: 'italic',
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a2a',
   },
   headerText: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 30,
-    letterSpacing: 2,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
-  profileCard: {
-    backgroundColor: "#2c2c2c",
-    padding: 25,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-    width: "100%",
-    maxWidth: 400,
-    alignItems: "center",
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1a1a',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a2a',
   },
-  profileText: {
-    fontSize: 20,
-    color: "#fff",
-    marginBottom: 15,
-    textAlign: "center",
+  tabItem: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
   },
-  errorText: {
-    fontSize: 18,
-    color: "red",
-    marginTop: 15,
-    textAlign: "center",
+  activeTabItem: {
+    borderBottomWidth: 3,
+    borderBottomColor: '#3498db',
   },
-  loadingContainer: {
-    alignItems: "center",
+  tabText: {
+    color: '#aaa',
+    fontSize: 16,
+    fontWeight: '500',
   },
-  loadingText: {
-    marginTop: 10,
-    color: "#3498db",
-    fontSize: 18,
-    fontWeight: "500",
+  activeTabText: {
+    color: '#3498db',
+    fontWeight: '600',
   },
+  contentContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  tabContent: {
+    alignItems: 'center',
+  },
+  // Profile Tab Styles
   profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    marginBottom: 20,
+    marginBottom: 25,
     borderWidth: 3,
     borderColor: '#3498db',
   },
@@ -705,31 +668,243 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    marginBottom: 20,
+    marginBottom: 25,
     backgroundColor: '#3498db',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#2980b9',
+    shadowColor: '#3498db',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   profileImagePlaceholderText: {
     fontSize: 48,
     fontWeight: 'bold',
     color: '#fff',
   },
-  profileActionContainer: {
+  infoCard: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 15,
+    padding: 20,
     width: '100%',
-    marginBottom: 15,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  infoLabel: {
+    color: '#aaa',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  infoValue: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#333',
+    width: '100%',
+  },
+  actionButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginTop: 5,
+    shadowColor: '#3498db',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  // Clothes Tab Styles
+  clothesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
+  },
+  clothesTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  addClothesButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+  },
+  addClothesButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  clothesList: {
+    width: '100%',
+  },
+  clothCard: {
+    backgroundColor: '#1e1e1e',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3498db',
+  },
+  clothText: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#1e1e1e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyIcon: {
+    fontSize: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 10,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#aaa',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  emptyStateButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  // Settings Tab Styles
+  settingsCard: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 15,
+    width: '100%',
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  settingsItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  settingsItemContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  settingsItemText: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  settingsItemIcon: {
+    fontSize: 20,
+    color: '#aaa',
+  },
+  settingsDivider: {
+    height: 1,
+    backgroundColor: '#333',
+  },
+  logoutButton: {
+    backgroundColor: '#e74c3c',
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginTop: 20,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Loading & Error Styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 15,
+    color: '#3498db',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#e74c3c',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  errorButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+  },
+  errorButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   formContainer: {
-    backgroundColor: '#2c2c2c',
+    backgroundColor: '#1e1e1e',
     borderRadius: 15,
     padding: 20,
     width: '100%',
@@ -744,51 +919,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formGroup: {
-    marginBottom: 15,
+    marginBottom: 20,
   },
   formLabel: {
     fontSize: 16,
-    color: '#fff',
-    marginBottom: 5,
+    color: '#3498db',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   formInput: {
-    backgroundColor: '#3a3a3a',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    padding: 15,
     color: '#fff',
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
   dropdownButton: {
-    backgroundColor: '#3a3a3a',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    padding: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
   },
   dropdownButtonText: {
     color: '#fff',
     fontSize: 16,
   },
+  dropdownIcon: {
+    color: '#3498db',
+    fontSize: 16,
+  },
   dropdownList: {
-    backgroundColor: '#3a3a3a',
-    borderRadius: 8,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
     marginTop: 5,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: '#333',
   },
   dropdownItem: {
-    padding: 12,
+    padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#444',
+    borderBottomColor: '#333',
   },
   selectedDropdownItem: {
-    backgroundColor: '#2980b9',
+    backgroundColor: '#3498db',
   },
   dropdownItemText: {
     color: '#fff',
@@ -805,7 +989,7 @@ const styles = StyleSheet.create({
   formButton: {
     flex: 1,
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 5,
@@ -823,6 +1007,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Password Form Styles
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  passwordInput: {
+    flex: 1,
+    color: '#fff',
+    padding: 15,
+    fontSize: 16,
+  },
+  eyeIcon: {
+    paddingHorizontal: 15,
+  },
+  eyeIconText: {
+    fontSize: 18,
   },
 });
 

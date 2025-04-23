@@ -254,9 +254,7 @@ const handleLogin = async () => {
             <View style={styles.dividerLine} />
           </View>
           
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
+         
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
