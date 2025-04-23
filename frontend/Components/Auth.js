@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { API_URL } from './config';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setAuthToken } from './token';
 // console.log('API_URL:', API_URL);
 const Auth = ({ navigation }) => {
   const [toggle, setToggle] = useState(false);
@@ -21,37 +22,43 @@ const Auth = ({ navigation }) => {
 
   const apiUrl = API_URL; 
 // const api=
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Please enter both email and password.');
-      return;
+const handleLogin = async () => {
+  if (!email || !password) {
+    setError('Please enter both email and password.');
+    return;
+  }
+
+  setlogging(true);
+  setError('');
+
+  try {
+    const response = await fetch(`${apiUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.msg || 'Invalid email or password.');
+    } else {
+      console.log('Login successful:', data);
+
+      // Store token globally
+      await AsyncStorage.setItem('token', data.token);
+      setAuthToken(data.token);
+// console.log(data.token)
+      navigation.navigate('Profile',{token:data.token}); // pass token if needed
     }
-
-    setlogging(true);
-    setError('');
-
-    try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.msg || 'Invalid email or password.');
-      } else {
-        console.log('Login successful:', data);
-         navigation.navigate('Profile',{token : data.token});
-      }
-    } catch (err) {
-      setError('Something went wrong. Please try again.',err);
-    } finally {
-      setlogging(false);
-    }
-  };
+  } catch (err) {
+    console.error('Login error:', err);
+    setError('Something went wrong. Please try again.');
+  } finally {
+    setlogging(false);
+  }
+};
 
   const handleSignup = async () => {
     if (!username || !email || !password) {
@@ -83,13 +90,7 @@ const Auth = ({ navigation }) => {
       setsigning(false);
     }
   };
-const loginwithgoogle=()=>{
-  fetch(`${apiUrl}/auth/google`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    })
-    body:JSON.stringify({token:authentication.accessToken})
-  }
+
 
   return (
     <View style={styles.container}>

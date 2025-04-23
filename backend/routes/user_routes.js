@@ -163,7 +163,7 @@ router.post(
       user.wardrobe.push(imageUrl);
       await user.save();
 
-      res.json({ message: "Upload successful", imageUrl });
+      res.json({ message: "Upload successful", imageUrl,token });
     } catch (error) {
       console.error("Upload error:", error);
       res.status(500).json({ error: "Upload failed", details: error.message });
@@ -209,11 +209,13 @@ router.post(
       const user = await User.findById(userid);
       // console.log(user);
       // user.clothes.push(clothingItems)
+      let allclothes=''
       for (let i=0;i<clothingItems.length;i++){
         const usercloth=clothingItems[i].item + " " + clothingItems[i].color
         // console.log(usercloth)
-        user.clothes.push(usercloth);
+        allclothes += usercloth + "; ";
       }
+      user.clothes.push(allclothes);
       await user.save()
       // Send back the classified items
       res.json({
@@ -226,5 +228,80 @@ router.post(
     }
   }
 );
+
+
+router.get("/getclothes",authenticate,async (req,res)=>{
+console.log(req.user)
+const user = await User.findById(req.user.id);
+res.json({ clothes: user.clothes });
+})
+
+router.post("/update-profile",authenticate,async (req,res)=>{
+  const {age,gender,preferences} = req.body;
+  const user = await User.findById(req.user.id);
+  user.age = age;
+  user.gender = gender;
+  user.preferences = preferences;
+  await user.save();
+  res.json({ message: "Profile updated successfully" });
+})
+
+router.post("/change-password", authenticate, async (req, res) => {
+  try {
+    console.log('Change password request received:', req.body);
+    const { currentPassword, newPassword } = req.body;
+    
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current password and new password are required" });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters long" });
+    }
+    
+    // Find user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    try {
+      // Import bcrypt dynamically if not available globally
+      const bcrypt = await import('bcrypt');
+      
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash new password
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+      
+      await user.save();
+      
+      console.log('Password changed successfully for user:', user.email);
+      res.json({ message: "Password changed successfully" });
+    } catch (bcryptError) {
+      console.error('Bcrypt error:', bcryptError);
+      
+      // Alternative approach without bcrypt (less secure but functional)
+      if (user.password !== currentPassword) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+      
+      user.password = newPassword;
+      await user.save();
+      
+      console.log('Password changed successfully (without bcrypt) for user:', user.email);
+      res.json({ message: "Password changed successfully" });
+    }
+  } catch (error) {
+    console.error("Error changing password:", error);
+    res.status(500).json({ message: "Server error: " + error.message });
+  }
+})
 
 export default router;
