@@ -5,9 +5,9 @@ const router = express.Router();
 import User from "../model/user.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import path from "path";
-import dotenv from 'dotenv'
+import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
-dotenv.config()
+dotenv.config();
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 // console.log('env is ', process.env.GOOGLE_API_KEY)
 // console.log("monog is ",process.env.PORT)
@@ -177,7 +177,7 @@ router.post(
   "/classify-image",
   memoryUpload.single("wardrobeImage"),
   async (req, res) => {
-    console.log('file details',req.file)
+    console.log("file details", req.file);
     const file = req.file;
 
     if (!file) {
@@ -185,7 +185,7 @@ router.post(
     }
 
     try {
-      console.log("in try block")
+      console.log("in try block");
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const result = await model.generateContent([
@@ -202,9 +202,19 @@ router.post(
       if (typeof responseText !== "string") {
         return res.status(500).json({ error: "AI response is not a string" });
       }
+      const tokenlogin = req.cookies.tokenlogin;
+      const userid = jwt.verify(tokenlogin, process.env.SECRET_KEY).id;
 
       const clothingItems = parseClothingList(responseText);
-
+      const user = await User.findById(userid);
+      // console.log(user);
+      // user.clothes.push(clothingItems)
+      for (let i=0;i<clothingItems.length;i++){
+        const usercloth=clothingItems[i].item + " " + clothingItems[i].color
+        // console.log(usercloth)
+        user.clothes.push(usercloth);
+      }
+      await user.save()
       // Send back the classified items
       res.json({
         filename: file.originalname,
