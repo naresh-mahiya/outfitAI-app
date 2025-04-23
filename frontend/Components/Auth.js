@@ -151,10 +151,12 @@ const handleLogin = async () => {
             transform: [{ translateY: slideAnim }]
           }]}
         >
-          {/* Logo */}
+           {/* Logo */}
           <View style={styles.logoContainer}>
-            
-            <Text style={styles.appName}>OutfitAI</Text>
+            <View style={styles.logoCircle}>
+              <Image source={require('../assets/logo_main.png')} style={styles.logoImg} resizeMode="contain" />
+            </View>
+
           </View>
           
           <Text style={styles.heading}>
@@ -212,7 +214,7 @@ const handleLogin = async () => {
                 style={styles.eyeIcon} 
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Text style={styles.eyeIconText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                <Text style={styles.eyeIconText}>{showPassword ? '👁' : '👁‍🗨'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -272,21 +274,22 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 18,
   },
   logoCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#3498db',
+    width: 130,
+    height: 130,
+    // borderRadius: 65, // Remove full circle
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
-    shadowColor: '#3498db',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    // Removed shadow and elevation for flat look
+  },
+  logoImg: {
+    width: 120,
+    height: 120,
+    borderRadius: 18,
   },
   logoText: {
     color: '#fff',
@@ -334,27 +337,29 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#23272f',
     color: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-    fontSize: 16,
+    padding: 11,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#3498db',
+    fontSize: 17,
+    marginBottom: 2,
+    // Remove shadow for flat look
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e1e1e',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
+    backgroundColor: '#23272f',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#3498db',
   },
   passwordInput: {
     flex: 1,
     color: '#fff',
-    padding: 15,
-    fontSize: 16,
+    padding: 11,
+    fontSize: 17,
   },
   eyeIcon: {
     paddingHorizontal: 15,
@@ -364,7 +369,8 @@ const styles = StyleSheet.create({
   },
   authBtn: {
     backgroundColor: '#3498db',
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 0,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
@@ -377,17 +383,22 @@ const styles = StyleSheet.create({
   btnText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 0.5,
+    fontSize: 17,
+    letterSpacing: 1,
+    textShadowColor: '#3498db33',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   toggleButton: {
-    marginTop: 20,
+    marginTop: 28,
     padding: 10,
   },
   toggleText: {
-    color: '#3498db',
+    color: '#6dd5fa',
     textAlign: 'center',
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   divider: {
     flexDirection: 'row',

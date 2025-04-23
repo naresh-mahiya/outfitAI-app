@@ -17,6 +17,7 @@ import {
   Button,
   Clipboard,
   Alert,
+  Share,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { API_URL } from "./config";
@@ -42,6 +43,8 @@ const Profile = ({ route }) => {
   const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [showClothes, setShowClothes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -378,6 +381,116 @@ const Profile = ({ route }) => {
   const navigateward = () => {
     navigation.navigate("Wardrobe",{token:token})
   }
+
+  const SharetoFriends = async (clothesToShare) => {
+    try {
+      console.log("Sharing outfit to friends...");
+      
+      // Create a share entry first to get a shareable ID
+      const shareResponse = await fetch(`${backendUrl}/share`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ clothes: clothesToShare }),
+        credentials: "include",
+      });
+      
+      if (!shareResponse.ok) {
+        throw new Error('Failed to create shareable link');
+      }
+      
+      const shareData = await shareResponse.json();
+      const shareId = shareData.id;
+      
+      // Define the frontend URL for sharing
+      const frontendUrl = "https://outfit-ai-liart.vercel.app";
+      // Create the full shareable link
+      const shareableLink = `${frontendUrl}/share/${shareId}`;
+      
+      console.log('Generated shareable link:', shareableLink);
+      
+      // Include the link in the shared message
+      const outfitDetails = `Outfit recommendation from OutfitAI!!! \n\n Check it out here: \n\n ${shareableLink}`;
+      
+      try {
+        const result = await Share.share({
+          message: outfitDetails,
+          title: 'OutfitAI Recommendation'
+        }, {
+          dialogTitle: 'Share Your Outfit',
+          subject: 'OutfitAI Recommendation'
+        });
+        
+        if (result.action === Share.sharedAction) {
+          if (result.activityType) {
+            console.log(`Shared with ${result.activityType}`);
+          } else {
+            // shared
+            console.log('Shared successfully');
+          }
+        } else if (result.action === Share.dismissedAction) {
+          // dismissed
+          console.log('Share dismissed');
+        }
+        
+        return true;
+      } catch (shareError) {
+        console.error("Error using Share API:", shareError);
+        Alert.alert(
+          "Sharing Failed",
+          "Could not share this outfit. Please try again.",
+          [{ text: "OK" }]
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error("Error sharing outfit:", error);
+      Alert.alert("Sharing Failed", "Could not share this outfit. Please try again.");
+      return false;
+    }
+  };
+  
+  const previewOutfit = async (clothesToShare) => {
+    try {
+      console.log("Previewing outfit...");
+      
+      const res = await fetch(`${backendUrl}/share`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ clothes: clothesToShare }),
+        credentials: "include",
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to create outfit preview');
+      }
+      
+      const data = await res.json();
+      console.log("Preview data:", data);
+      
+      if (data && data.id) {
+        // Navigate to the ShareOutfit screen with the share ID and token
+        navigation.navigate("ShareOutfit", { id: data.id, token: token });
+        return true;
+      } else {
+        throw new Error('Invalid response data');
+      }
+    } catch (error) {
+      console.error("Error previewing outfit:", error);
+      Alert.alert(
+        "Preview Failed", 
+        "Could not generate outfit preview. Please try again.",
+        [{ text: "OK" }]
+      );
+      return false;
+    }
+  };
+
   // Render tab content based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
@@ -536,10 +649,18 @@ const Profile = ({ route }) => {
 
                       <TouchableOpacity 
                         style={styles.favoriteActionButton}
-                        onPress={()=>{alert('Share to friends')}}
+                        onPress={() => SharetoFriends(item)}
                       >
                         <Text style={styles.favoriteActionText}>Share</Text>
                       </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={styles.favoriteActionButton}
+                        onPress={() => previewOutfit(item)}
+                      >
+                        <Text style={styles.favoriteActionText}>Preview</Text>
+                      </TouchableOpacity>
+
                     </View>
                   </View>
                 )}
@@ -790,6 +911,48 @@ const Profile = ({ route }) => {
                 ) : (
                   <Text style={styles.buttonText}>Save</Text>
                 )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Share Link Modal */}
+      <Modal
+        visible={showShareModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.formContainer}>
+            <Text style={styles.formTitle}>Share Your Outfit</Text>
+            
+            <View style={styles.shareContainer}>
+              <Text style={styles.shareText}>Share this link with your friends:</Text>
+              <View style={styles.linkContainer}>
+                <Text style={styles.linkText} numberOfLines={1} ellipsizeMode="middle">
+                  {shareLink}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.shareActions}>
+              <TouchableOpacity 
+                style={[styles.formButton, styles.copyButton]}
+                onPress={() => {
+                  Clipboard.setString(shareLink);
+                  Alert.alert("Copied!", "Link copied to clipboard");
+                }}
+              >
+                <Text style={styles.buttonText}>Copy Link</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.formButton, styles.closeButton]}
+                onPress={() => setShowShareModal(false)}
+              >
+                <Text style={styles.buttonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1367,6 +1530,37 @@ const styles = StyleSheet.create({
   },
   eyeIconText: {
     fontSize: 18,
+  },
+  // Share Link Modal Styles
+  shareContainer: {
+    marginBottom: 20,
+  },
+  shareText: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 10,
+  },
+  linkContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#3498db',
+  },
+  linkText: {
+    color: '#3498db',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  shareActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  copyButton: {
+    backgroundColor: '#3498db',
+  },
+  closeButton: {
+    backgroundColor: '#7f8c8d',
   },
 });
 

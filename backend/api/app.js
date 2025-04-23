@@ -17,8 +17,6 @@ import Chatbot from '../routes/chat.js';
 import ShareRoutes from '../routes/share.js';
 import imageGenerateRoute from '../routes/image.js';
 import profileRoutes from '../routes/profilebackend.js'; // 👈 Added from second file
-import session from "express-session";
-import passport from "passport";
 import path from 'path';
 import cors from 'cors';
 import connectCloudinary from '../db/cloudinary.js';
@@ -125,6 +123,7 @@ app.post("/imageuploading", upload.single('file'), (req, res) => {
 // Server listening
 const PORT = process.env.PORT || 3000;
 const ipaddress='192.168.137.233'
+console.log(mongoUri)
 const main=async()=>{
   await connectCloudinary();
   await connect(mongoUri); 

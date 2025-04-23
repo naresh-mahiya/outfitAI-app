@@ -8,6 +8,7 @@ import Profile from './Components/profile';
 import Upload from './Components/upload';
 import Wardrobe from './Components/Wardrobe'
 import Recommendation from './Components/Recommendations'
+import Share from './Components/ShareClothes'
 const Stack = createStackNavigator();
 
 const App = () => {
@@ -23,6 +24,7 @@ const App = () => {
         <Stack.Screen name="Upload" component={Upload} />
         <Stack.Screen name="Wardrobe" component={Wardrobe} />
         <Stack.Screen name="Recommendation" component={Recommendation} />
+        <Stack.Screen name="ShareOutfit" component={Share} />
       </Stack.Navigator>
     </NavigationContainer>
   );

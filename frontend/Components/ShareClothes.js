@@ -14,19 +14,23 @@ import {
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-
-const ShareClothes = () => {
-  const route = useRoute();
-  const { id } = route.params;
+import { API_URL } from './config';
+const ShareClothes = ({route}) => {
   const [sharecloth, setSharedCloth] = useState([]);
   const [username, setUsername] = useState('Users');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const apiUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  const frontendUrl = process.env.EXPO_PUBLIC_FRONTEND_URL;
-
+  const apiUrl = API_URL;
+  const token=route.params?.token 
+  const id=route.params?.id
+  // Define the frontend URL for sharing
+  const frontendUrl = "https://outfit-ai-liart.vercel.app";
+  // Create the full shareable link
+  const shareableLink = `${frontendUrl}/share/${id}`;
+  console.log('share details', token, id);
+  console.log('Shareable link:', shareableLink);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -34,7 +38,7 @@ const ShareClothes = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + (await AsyncStorage.getItem('token')),
+            Authorization: 'Bearer ' + token,
           },
         });
 
@@ -105,13 +109,45 @@ const ShareClothes = () => {
   };
 
   const shareWithFriends = async () => {
-    const url = `${frontendUrl}/share/${id}`;
     try {
-      await Share.share({
-        message: `Check out this outfit I shared with you! ${url}`,
-      });
+      console.log("Sharing outfit to friends...");
+      
+      const url = `${frontendUrl}/share/${id}`;
+      const shareMessage = `Check out this outfit I shared with you! ${url}`;
+      
+      try {
+        const result = await Share.share({
+          message: shareMessage,
+          title: 'OutfitAI Recommendation'
+        }, {
+          dialogTitle: 'Share Your Outfit',
+          subject: 'OutfitAI Recommendation'
+        });
+        
+        if (result.action === Share.sharedAction) {
+          if (result.activityType) {
+            console.log(`Shared with ${result.activityType}`);
+          } else {
+            console.log('Shared successfully');
+          }
+        } else if (result.action === Share.dismissedAction) {
+          console.log('Share dismissed');
+        }
+        
+        return true;
+      } catch (shareError) {
+        console.error("Error using Share API:", shareError);
+        Alert.alert(
+          "Sharing Failed",
+          "Could not share this outfit. Please try again.",
+          [{ text: "OK" }]
+        );
+        return false;
+      }
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error("Error sharing outfit:", error);
+      Alert.alert("Sharing Failed", "Could not share this outfit. Please try again.");
+      return false;
     }
   };
 
@@ -168,6 +204,22 @@ const ShareClothes = () => {
 
       <View style={styles.clothesList}>
         <Text style={styles.clothesText}>{sharecloth}</Text>
+      </View>
+
+      {/* Shareable Link Section */}
+      <View style={styles.linkContainer}>
+        <Text style={styles.linkTitle}>Share this outfit:</Text>
+        <View style={styles.linkBox}>
+          <Text style={styles.linkText} numberOfLines={1} ellipsizeMode="middle">
+            {shareableLink}
+          </Text>
+        </View>
+        <View style={styles.linkActions}>
+          <TouchableOpacity style={styles.linkButton} onPress={copyToClipboard}>
+            <Ionicons name="copy-outline" size={18} color="white" />
+            <Text style={styles.linkButtonText}>{copySuccess ? "Copied!" : "Copy Link"}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.imageContainer}>
@@ -304,6 +356,50 @@ const styles = StyleSheet.create({
   loadingPreviewText: {
     color: '#666',
     marginTop: 8,
+  },
+  linkContainer: {
+    backgroundColor: '#2a2a2a',
+    margin: 16,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  linkTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  linkBox: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#3498db',
+  },
+  linkText: {
+    color: '#3498db',
+    fontSize: 14,
+  },
+  linkActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  linkButton: {
+    backgroundColor: '#3498db',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  linkButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 8,
   },
   shareContainer: {
     padding: 16,
