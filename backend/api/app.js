@@ -1,11 +1,13 @@
 // server.js
 
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import connect from '../db/connection.js';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
+
 import UserRoutes from '../routes/user_routes.js';
 import AuthRoutes from '../routes/auth_routes.js';
 // import GoogleLoginRoutes from '../routes/auth.google.js';
@@ -21,9 +23,10 @@ import path from 'path';
 import cors from 'cors';
 import connectCloudinary from '../db/cloudinary.js';
 import multer from 'multer';
-dotenv.config();
+
 const frontendUrl = process.env.FRONTEND_URL;
 const mongoUri = process.env.MONGO_URI;
+
 const app = express();
 const httpServer = http.createServer(app);
 
@@ -44,8 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(path.resolve(), "uploads")));
 app.use("/uploadscloths", express.static(path.join(path.resolve(), "uploadscloths")));
 
-connectCloudinary();
-connect(mongoUri); 
+
 
 // Routes
 app.use("/chat", Chatbot);
@@ -123,8 +125,14 @@ app.post("/imageuploading", upload.single('file'), (req, res) => {
 // Server listening
 const PORT = process.env.PORT || 3000;
 const ipaddress='192.168.188.21'
-httpServer.listen(PORT, () => {
-  console.log(`Server listening on http://${ipaddress}:${PORT}`);
-});
+const main=async()=>{
+  await connectCloudinary();
+  await connect(mongoUri); 
+  httpServer.listen(PORT, () => {
+    console.log(`Server listening on http://${ipaddress}:${PORT}`);
+  });
+}
+
+main()
 
 export default app;
