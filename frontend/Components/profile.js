@@ -202,7 +202,7 @@ const Profile = ({ route }) => {
   };
 
   const navigatetowardorbe = () => {
-    navigation.navigate("Wardrobe", {token: token});
+    navigation.navigate("Upload", {token: token});
   };
   
   // Clean logout function
@@ -437,33 +437,52 @@ const Profile = ({ route }) => {
         );
         
       case 'clothes':
-        return (
-          <Animated.View 
-            style={[styles.tabContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
-          >
-            <View style={styles.clothesHeader}>
-              <Text style={styles.clothesTitle}>My Wardrobe</Text>
-              <TouchableOpacity 
-                style={styles.addClothesButton}
-                onPress={navigatetowardorbe}
-              >
-                <Text style={styles.addClothesButtonText}>+ Add Clothes</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {clothes.length > 0 ? (
-              <FlatList
-                data={clothes}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item, index }) => (
-                  <View style={styles.clothCard}>
-                    <Text style={styles.clothText}>{item}</Text>
+        if (clothes.length > 0) {
+          // Return only the FlatList when we have clothes items
+          return (
+            <FlatList
+              data={clothes}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item, index }) => (
+                <View style={styles.clothCard}>
+                  <Text style={styles.clothText}>{item}</Text>
+                </View>
+              )}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.clothesList}
+              ListHeaderComponent={() => (
+                <Animated.View 
+                  style={[{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+                >
+                  <View style={styles.clothesHeader}>
+                    <Text style={styles.clothesTitle}>My Wardrobe</Text>
+                    <TouchableOpacity 
+                      style={styles.addClothesButton}
+                      onPress={navigatetowardorbe}
+                    >
+                      <Text style={styles.addClothesButtonText}>+ Add Clothes</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.clothesList}
-              />
-            ) : (
+                </Animated.View>
+              )}
+            />
+          );
+        } else {
+          // Return a regular view for the empty state
+          return (
+            <Animated.View 
+              style={[styles.tabContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+            >
+              <View style={styles.clothesHeader}>
+                <Text style={styles.clothesTitle}>My Wardrobe</Text>
+                <TouchableOpacity 
+                  style={styles.addClothesButton}
+                  onPress={navigatetowardorbe}
+                >
+                  <Text style={styles.addClothesButtonText}>+ Add Clothes</Text>
+                </TouchableOpacity>
+              </View>
+              
               <View style={styles.emptyStateContainer}>
                 <View style={styles.emptyIconContainer}>
                   <Text style={styles.emptyIcon}>👕</Text>
@@ -477,9 +496,9 @@ const Profile = ({ route }) => {
                   <Text style={styles.emptyStateButtonText}>Add Your First Item</Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </Animated.View>
-        );
+            </Animated.View>
+          );
+        }
         
       case 'settings':
         return (
@@ -590,15 +609,225 @@ const Profile = ({ route }) => {
           </View>
           
           {/* Tab Content */}
-          <ScrollView 
-            style={styles.contentContainer}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {renderTabContent()}
-          </ScrollView>
+          <View style={styles.contentContainer}>
+            {activeTab !== 'clothes' ? (
+              <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {renderTabContent()}
+              </ScrollView>
+            ) : (
+              renderTabContent()
+            )}
+          </View>
         </>
-      </SafeAreaView>
+      )}
+      
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={showForm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={toggleForm}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.formContainer}>
+            <Text style={styles.formTitle}>Edit Profile</Text>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Age</Text>
+              <TextInput
+                style={styles.formInput}
+                placeholder="Enter your age"
+                placeholderTextColor="#8a8a8a"
+                keyboardType="numeric"
+                value={age.toString()}
+                onChangeText={setAge}
+              />
+            </View>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Gender</Text>
+              <TouchableOpacity 
+                style={styles.dropdownButton}
+                onPress={() => setShowGenderDropdown(!showGenderDropdown)}
+              >
+                <Text style={styles.dropdownButtonText}>{genderLabel}</Text>
+                <Text style={styles.dropdownIcon}>{showGenderDropdown ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              
+              {showGenderDropdown && (
+                <View style={styles.dropdownList}>
+                  {genderOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.dropdownItem,
+                        gender === option.value && styles.selectedDropdownItem,
+                      ]}
+                      onPress={() => handleSelectGender(option.value, option.label)}
+                    >
+                      <Text 
+                        style={[
+                          styles.dropdownItemText,
+                          gender === option.value && styles.selectedDropdownItemText,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Style Preferences</Text>
+              <TextInput
+                style={[styles.formInput, styles.textArea]}
+                placeholder="Describe your style preferences"
+                placeholderTextColor="#8a8a8a"
+                multiline
+                numberOfLines={4}
+                value={preferences}
+                onChangeText={setPreferences}
+              />
+            </View>
+            
+            <View style={styles.formActions}>
+              <TouchableOpacity 
+                style={[styles.formButton, styles.cancelButton]}
+                onPress={toggleForm}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.formButton, 
+                  styles.saveButton,
+                  formSubmitting && styles.disabledButton
+                ]}
+                onPress={handleUpdateProfile}
+                disabled={formSubmitting}
+              >
+                {formSubmitting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Change Password Modal */}
+      <Modal
+        visible={showPasswordForm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={togglePasswordForm}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.formContainer}>
+            <Text style={styles.formTitle}>Change Password</Text>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Current Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Enter current password"
+                  placeholderTextColor="#8a8a8a"
+                  secureTextEntry={!showCurrentPassword}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon} 
+                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  <Text style={styles.eyeIconText}>
+                    {showCurrentPassword ? '👁️' : '👁️‍🗨️'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>New Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Enter new password"
+                  placeholderTextColor="#8a8a8a"
+                  secureTextEntry={!showNewPassword}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon} 
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                >
+                  <Text style={styles.eyeIconText}>
+                    {showNewPassword ? '👁️' : '👁️‍🗨️'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Confirm New Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Confirm new password"
+                  placeholderTextColor="#8a8a8a"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon} 
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Text style={styles.eyeIconText}>
+                    {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.formActions}>
+              <TouchableOpacity 
+                style={[styles.formButton, styles.cancelButton]}
+                onPress={togglePasswordForm}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.formButton, 
+                  styles.saveButton,
+                  passwordSubmitting && styles.disabledButton
+                ]}
+                onPress={handleChangePassword}
+                disabled={passwordSubmitting}
+              >
+                {passwordSubmitting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Update</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 

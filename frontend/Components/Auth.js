@@ -248,12 +248,8 @@ const handleLogin = async () => {
             </Text>
           </TouchableOpacity>
           
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
           
+      
          
         </Animated.View>
       </ScrollView>
