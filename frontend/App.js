@@ -7,6 +7,7 @@ import Auth from './Components/Auth';
 import Profile from './Components/profile';
 import Upload from './Components/upload';
 import Wardrobe from './Components/Wardrobe'
+import Recommendation from './Components/Recommendations'
 const Stack = createStackNavigator();
 
 const App = () => {
@@ -21,6 +22,7 @@ const App = () => {
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="Upload" component={Upload} />
         <Stack.Screen name="Wardrobe" component={Wardrobe} />
+        <Stack.Screen name="Recommendation" component={Recommendation} />
       </Stack.Navigator>
     </NavigationContainer>
   );

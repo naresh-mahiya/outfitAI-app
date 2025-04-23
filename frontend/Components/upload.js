@@ -3,13 +3,14 @@ import { View, Button, Image, Alert, Text, ScrollView, ActivityIndicator } from 
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
-
+import {API_URL} from './config'
 const Profile = () => {
   const [imageUri, setImageUri] = useState(null);
   const [clothingItems, setClothingItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
 
+  const backend_url=API_URL
   const handleUpload = async () => {
     try {
       setIsLoading(true);
@@ -49,7 +50,7 @@ const Profile = () => {
 
       // Upload image to the backend
       const uploadResponse = await axios.post(
-        "http://192.168.188.21:3000/user/upload-image",
+        `${backend_url}/user/upload-image`,
         formData,
         {
           headers: {
@@ -66,7 +67,7 @@ const Profile = () => {
 // console.log('token is ', token)
       // After uploading, classify the image to get clothing items
       const classificationResponse = await axios.post(
-        "http://192.168.188.21:3000/user/classify-image",
+        `${backend_url}/user/classify-image`,
         formData,
         {
           headers: {

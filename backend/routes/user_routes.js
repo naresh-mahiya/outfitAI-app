@@ -304,4 +304,57 @@ router.post("/change-password", authenticate, async (req, res) => {
   }
 })
 
+router.post("/addnewcloths", authenticate, async (req, res) => {
+  const userid = req.user.id;
+  console.log(req.body);
+  const user = await User.findById(userid);
+  const clothdata = req.body.clothname;
+  if (user.clothes[0]) {
+    console.log("saved");
+    user.clothes[0] += `\n , ${clothdata} , `;
+  } else {
+    console.log("not saved");
+    user.clothes[0] = clothdata + " ";
+  }
+  await user.save();
+
+  res.json({ message: "cloth saved to the user" });
+});
+router.post("/cloth/lovesuggestion/save", authenticate, async (req, res) => {
+  const userid = req.user.id;
+  // console.log(userid);
+  const cloths = req.body.clothsuggestion;
+  console.log(cloths);
+  const user = await User.findById(userid);
+  if (!user) {
+    res.status(404).json({ msg: "no user found" });
+    return;
+  }
+  if (!user.favourites.includes(cloths)) {
+    user.favourites.push(cloths);
+  }
+
+  await user.save();
+  res.status(200).json({ msg: "Suggestion saved to favourites" });
+});
+
+router.get("/clothsforweek", authenticate, async (req, res) => {
+  const userid = req.user.id;
+
+  try {
+    const user = await User.findById(userid);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const clothforweekdata = user.clothessuggestionforweek;
+    const favourites = user.favourites;
+    res.json({ clothforweek: clothforweekdata, favourites: favourites });
+  } catch (err) {
+    console.error("Error fetching clothes for week:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;

@@ -15,6 +15,8 @@ import {
   SafeAreaView,
   StatusBar,
   Button,
+  Clipboard,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { API_URL } from "./config";
@@ -36,6 +38,8 @@ const Profile = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
   const [clothes, setClothes] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [showClothes, setShowClothes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -100,6 +104,7 @@ const Profile = ({ route }) => {
   useEffect(() => {
     if (token) {
       getclothes();
+      getFavorites();
     }
   }, [token]);
   
@@ -158,43 +163,50 @@ const Profile = ({ route }) => {
       .finally(() => setLoading(false));
   };
 
-  const getclothes = () => {
-    console.log('Fetching clothes with token:', token ? 'Token exists' : 'No token');
-    
-    if (!token) {
-      console.log('No token available, skipping clothes fetch');
-      return;
-    }
-    
-    fetch(`${backendUrl}/user/getclothes`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      }
-    })
-      .then((response) => {
-        console.log('Clothes response status:', response.status);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch clothes: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log('Clothes data received:', data);
-        // Check if data has clothes property and it's an array
-        if (data && data.clothes && Array.isArray(data.clothes)) {
-          setClothes(data.clothes);
-        } else {
-          console.warn('Unexpected data format:', data);
-          setClothes([]);
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching clothes:', error);
-        // Set empty array on error to avoid undefined errors in UI
-        setClothes([]);
+  const getclothes = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/user/images`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch clothes: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data && data.Wardrobe && data.Wardrobe.allclothes) {
+        setClothes(data.Wardrobe.allclothes);
+      } else {
+        console.warn('Unexpected data format:', data);
+        setClothes([]);
+      }
+    } catch (error) {
+      console.error("Error fetching clothes:", error);
+      setClothes([]);
+    }
+  };
+  
+  const getFavorites = async () => {
+    try {
+      setFavoritesLoading(true);
+      const response = await fetch(`${backendUrl}/user/clothsforweek`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.favourites) {
+        setFavorites(data.favourites);
+      }
+      setFavoritesLoading(false);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+      setFavoritesLoading(false);
+    }
   };
 
   const handleImageUpload = () => {
@@ -350,7 +362,7 @@ const Profile = ({ route }) => {
       setShowPasswordForm(false); // Close form
       alert('Password changed successfully!');
       // Clear password fields
-      setCurrentPassword('');
+      setCurrentPassword(''); 
       setNewPassword('');
       setConfirmPassword('');
     })
@@ -363,6 +375,9 @@ const Profile = ({ route }) => {
     });
   };
   
+  const navigateward = () => {
+    navigation.navigate("Wardrobe",{token:token})
+  }
   // Render tab content based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
@@ -433,6 +448,9 @@ const Profile = ({ route }) => {
             <TouchableOpacity style={styles.actionButton} onPress={toggleForm}>
               <Text style={styles.actionButtonText}>Edit Profile</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={navigateward}>
+              <Text style={styles.actionButtonText}>My Wardrobe</Text>
+            </TouchableOpacity>
           </Animated.View>
         );
         
@@ -440,66 +458,116 @@ const Profile = ({ route }) => {
         if (clothes.length > 0) {
           // Return only the FlatList when we have clothes items
           return (
-            <FlatList
-              data={clothes}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item, index }) => (
-                <View style={styles.clothCard}>
-                  <Text style={styles.clothText}>{item}</Text>
-                </View>
-              )}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.clothesList}
-              ListHeaderComponent={() => (
-                <Animated.View 
-                  style={[{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
-                >
-                  <View style={styles.clothesHeader}>
-                    <Text style={styles.clothesTitle}>My Wardrobe</Text>
-                    <TouchableOpacity 
-                      style={styles.addClothesButton}
-                      onPress={navigatetowardorbe}
-                    >
-                      <Text style={styles.addClothesButtonText}>+ Add Clothes</Text>
-                    </TouchableOpacity>
-                  </View>
-                </Animated.View>
-              )}
-            />
-          );
-        } else {
-          // Return a regular view for the empty state
-          return (
-            <Animated.View 
-              style={[styles.tabContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
-            >
+            <View style={styles.clothesContainer}>
               <View style={styles.clothesHeader}>
-                <Text style={styles.clothesTitle}>My Wardrobe</Text>
+                <Text style={styles.clothesTitle}>Get recommedation</Text>
                 <TouchableOpacity 
                   style={styles.addClothesButton}
-                  onPress={navigatetowardorbe}
+                  onPress={navigateward}
                 >
-                  <Text style={styles.addClothesButtonText}>+ Add Clothes</Text>
+                  <Text style={styles.addClothesButtonText}>View Wardrobe</Text>
                 </TouchableOpacity>
               </View>
               
-              <View style={styles.emptyStateContainer}>
-                <View style={styles.emptyIconContainer}>
-                  <Text style={styles.emptyIcon}>👕</Text>
-                </View>
-                <Text style={styles.emptyStateTitle}>No clothes yet</Text>
-                <Text style={styles.emptyStateText}>Add some clothes to your wardrobe to get started</Text>
-                <TouchableOpacity 
-                  style={styles.emptyStateButton}
-                  onPress={navigatetowardorbe}
-                >
-                  <Text style={styles.emptyStateButtonText}>Add Your First Item</Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
+              <FlatList
+                data={clothes}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item, index }) => (
+                  <View style={styles.clothCard}>
+                    <Text style={styles.clothText}>{item}</Text>
+                  </View>
+                )}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.clothesList}
+              />
+              
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => navigation.navigate("Recommendation",{token:token})}
+              >
+                <Text style={styles.actionButtonText}>Get Outfit Recommendations</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        } else {
+          // Return a message when there are no clothes
+          return (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No clothes added yet</Text>
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={navigateward}
+              >
+                <Text style={styles.actionButtonText}>Add to Wardrobe</Text>
+              </TouchableOpacity>
+            </View>
           );
         }
         
+      case 'favorites':
+        if (favoritesLoading) {
+          return (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6c5ce7" />
+              <Text style={styles.loadingText}>Loading your favorite outfits...</Text>
+            </View>
+          );
+        } else if (favorites && favorites.length > 0) {
+          return (
+            <View style={styles.favoritesContainer}>
+              <Text style={styles.favoritesTitle}>Your Saved Outfits</Text>
+              <FlatList
+                data={favorites}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item, index }) => (
+                  <View style={styles.favoriteCard}>
+                    <Text style={styles.favoriteText}>{item}</Text>
+                    <View style={styles.favoriteActions}>
+                      <TouchableOpacity 
+                        style={styles.favoriteActionButton}
+                        onPress={() => {
+                          // Copy to clipboard
+                          Clipboard.setString(item);
+                          alert('Outfit copied to clipboard!');
+                        }}
+                      >
+                        <Text style={styles.favoriteActionText}>Copy</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={styles.favoriteActionButton}
+                        onPress={()=>{alert('Share to friends')}}
+                      >
+                        <Text style={styles.favoriteActionText}>Share</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.favoritesList}
+              />
+              
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => navigation.navigate("Recommendation", {token:token})}
+              >
+                <Text style={styles.actionButtonText}>Get More Recommendations</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No favorite outfits saved yet</Text>
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => navigation.navigate("Recommendation", {token:token})}
+              >
+                <Text style={styles.actionButtonText}>Get Outfit Recommendations</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }
       case 'settings':
         return (
           <Animated.View 
@@ -563,54 +631,59 @@ const Profile = ({ route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+      <StatusBar barStyle="light-content" backgroundColor="#1e1e2e" />
       
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
+          <ActivityIndicator size="large" color="#6c5ce7" />
           <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.errorButton} onPress={handleLogout}>
-            <Text style={styles.errorButtonText}>Go to Login</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={profiledetails}>
+            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerText}>My Profile</Text>
-          </View>
-          
           {/* Tab Navigation */}
           <View style={styles.tabBar}>
             <TouchableOpacity 
-              style={[styles.tabItem, activeTab === 'profile' && styles.activeTabItem]}
+              style={[styles.tabButton, activeTab === 'profile' && styles.activeTabButton]}
               onPress={() => setActiveTab('profile')}
             >
-              <Text style={[styles.tabText, activeTab === 'profile' && styles.activeTabText]}>Profile</Text>
+              <Text style={[styles.tabButtonText, activeTab === 'profile' && styles.activeTabButtonText]}>Profile</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.tabItem, activeTab === 'clothes' && styles.activeTabItem]}
+              style={[styles.tabButton, activeTab === 'clothes' && styles.activeTabButton]}
               onPress={() => setActiveTab('clothes')}
             >
-              <Text style={[styles.tabText, activeTab === 'clothes' && styles.activeTabText]}>Clothes</Text>
+              <Text style={[styles.tabButtonText, activeTab === 'clothes' && styles.activeTabButtonText]}>Clothes</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.tabItem, activeTab === 'settings' && styles.activeTabItem]}
+              style={[styles.tabButton, activeTab === 'favorites' && styles.activeTabButton]}
+              onPress={() => setActiveTab('favorites')}
+            >
+              <Text style={[styles.tabButtonText, activeTab === 'favorites' && styles.activeTabButtonText]}>Favorites</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.tabButton, activeTab === 'settings' && styles.activeTabButton]}
               onPress={() => setActiveTab('settings')}
             >
-              <Text style={[styles.tabText, activeTab === 'settings' && styles.activeTabText]}>Settings</Text>
+              <Text style={[styles.tabButtonText, activeTab === 'settings' && styles.activeTabButtonText]}>Settings</Text>
             </TouchableOpacity>
           </View>
           
           {/* Tab Content */}
           <View style={styles.contentContainer}>
-            {activeTab !== 'clothes' ? (
+            {/* Don't wrap favorites tab in ScrollView since it already has a FlatList */}
+            {activeTab === 'favorites' ? (
+              renderTabContent()
+            ) : activeTab !== 'clothes' ? (
               <ScrollView 
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
@@ -855,21 +928,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#2a2a2a',
   },
-  tabItem: {
+  tabButton: {
     flex: 1,
     paddingVertical: 15,
     alignItems: 'center',
   },
-  activeTabItem: {
+  activeTabButton: {
     borderBottomWidth: 3,
     borderBottomColor: '#3498db',
   },
-  tabText: {
+  tabButtonText: {
     color: '#aaa',
     fontSize: 16,
     fontWeight: '500',
   },
-  activeTabText: {
+  activeTabButtonText: {
     color: '#3498db',
     fontWeight: '600',
   },
@@ -1004,21 +1077,58 @@ const styles = StyleSheet.create({
   },
   clothText: {
     fontSize: 16,
+    color: '#dfe6e9',
+  },
+  // Favorites styles
+  favoritesContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  favoritesTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 16,
+    textAlign: 'center',
   },
-  emptyStateContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
+  favoritesList: {
+    paddingBottom: 16,
   },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#1e1e1e',
+  favoriteCard: {
+    backgroundColor: '#252836',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(108, 92, 231, 0.2)',
+  },
+  favoriteText: {
+    fontSize: 15,
+    color: '#dfe6e9',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  favoriteActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  favoriteActionButton: {
+    backgroundColor: 'rgba(108, 92, 231, 0.2)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  favoriteActionText: {
+    color: '#a4b0be',
+    fontSize: 12,
+  },
+  emptyContainer: {
+    flex: 1,
+    backgroundColor: '#1e1e2e',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    padding: 20,
   },
   emptyIcon: {
     fontSize: 40,

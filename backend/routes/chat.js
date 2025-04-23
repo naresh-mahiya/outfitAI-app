@@ -1,11 +1,9 @@
 import express from "express";
 import dotenv from "dotenv";
-import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import e from "express";
 import ChatMessage from "../model/chatmessage.js";
 // import { authenticate } from "passport";
-
+ 
 dotenv.config();
 
 import jwt from "jsonwebtoken";
@@ -193,6 +191,7 @@ router.get("/chathistory", authenticatemain, async (req, res) => {
   const chatHistory = await ChatMessage.find({ userId: userid }).sort({
     createdAt: -1,
   });
+  console.log("chatHistory", chatHistory);
   res.json({ chatHistory: chatHistory });
 });
 import User from "../model/user.js";

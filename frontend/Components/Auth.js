@@ -153,9 +153,7 @@ const handleLogin = async () => {
         >
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>OAI</Text>
-            </View>
+            
             <Text style={styles.appName}>OutfitAI</Text>
           </View>
           

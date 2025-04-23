@@ -124,7 +124,7 @@ app.post("/imageuploading", upload.single('file'), (req, res) => {
 
 // Server listening
 const PORT = process.env.PORT || 3000;
-const ipaddress='192.168.188.21'
+const ipaddress='192.168.137.233'
 const main=async()=>{
   await connectCloudinary();
   await connect(mongoUri); 

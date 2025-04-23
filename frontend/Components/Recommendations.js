@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,25 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
-  Clipboard,
   Alert,
+  Image,
+  Keyboard,
+  Animated,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
+import { Clipboard } from 'react-native';
 import * as Location from 'expo-location';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { API_URL } from './config';
 
-const { width } = Dimensions.get('window');
-
-const Recommendations = () => {
+const { width, height } = Dimensions.get('window');
+const Recommendations = ({route}) => {
+  const navigation = useNavigation();
+  const scrollViewRef = useRef(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+const token=route.params?.token
   const [clothes, setClothes] = useState([]);
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
@@ -25,8 +36,32 @@ const Recommendations = () => {
   const [enabled, setEnabled] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState([]);
-  const apiUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  const [chatHistory, setChatHistory] = useState([]);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const apiUrl = API_URL;
+
+  // Animation effect when component mounts
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     fetch(`${apiUrl}/user/images`, {
@@ -148,13 +183,38 @@ const Recommendations = () => {
     setMessages([...newMessages, { sender: 'bot', text: reply }]);
   };
 
-  const copyToClipboard = async (text, index) => {
-    await Clipboard.setStringAsync(text);
+  const copyToClipboard = (text, index) => {
+    Clipboard.setString(text);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  const loveSuggestion = async (clothsuggestion) => {
+    // console.log('suggestion',clothsuggestion);
+    try {
+      // Use the token from route params
+      const response = await fetch(`${apiUrl}/user/cloth/lovesuggestion/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ clothsuggestion }),
+      });
+
+      if (response.ok) {
+        Alert.alert('Success', 'Outfit saved to your favorites!');
+      } else {
+        Alert.alert('Error', 'Failed to save outfit');
+      }
+    } catch (error) {
+      console.error('Error saving outfit:', error);
+      Alert.alert('Error', 'Something went wrong');
+    }
+  };
+
   const loadChatHistory = async () => {
+    console.log("in chat ")
     try {
       const response = await fetch(`${apiUrl}/chat/chathistory`, {
         method: 'GET',
@@ -165,244 +225,596 @@ const Recommendations = () => {
       });
 
       const data = await response.json();
-      setHistory(data.chatHistory);
+      console.log
+      setChatHistory(data.chatHistory);
       setShowHistory(true);
     } catch (error) {
       console.error('Error fetching chat history:', error);
     }
   };
 
-  const loveSuggestion = (clothSuggestion) => {
-    fetch(`${apiUrl}/user/cloth/lovesuggestion/save`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ clothSuggestion }),
-    })
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error('Error:', error));
-  };
+  useEffect(() => {
+    if (enabled) {
+      fetchWeather();
+    }
+    
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, [enabled]);
+
+  useEffect(() => {
+    if (messages.length > 0 && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>AI Outfit Recommender</Text>
-        <Text style={styles.subtitle}>
-          The AI knows your uploaded clothes, so just ask for outfit suggestions!
-        </Text>
-
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[styles.toggle, enabled && styles.toggleEnabled]}
-            onPress={toggleWeather}
-          >
-            <View style={styles.toggleCircle} />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.weatherStatus}>
-          {enabled
-            ? 'Weather and location-based recommendation ON'
-            : 'Weather and location-based recommendation OFF'}
-        </Text>
-
-        <TextInput
-          style={styles.input}
-          value={userInput}
-          onChangeText={setUserInput}
-          placeholder="Describe the event (e.g., Wedding, Casual Meetup)"
-          placeholderTextColor="#ffffff"
-        />
-
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={isLoading}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e1e2e" />
+      
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
         >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.buttonText}>Get Outfit</Text>
-          )}
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-
-        {messages.length > 0 && (
-          <View style={styles.messagesContainer}>
-            {messages.map((msg, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.message,
-                  msg.sender === 'user' ? styles.userMessage : styles.botMessage,
-                ]}
-              >
-                <Text style={styles.messageText}>{msg.text}</Text>
-                <TouchableOpacity
-                  style={styles.copyButton}
-                  onPress={() => copyToClipboard(msg.text, index)}
-                >
-                  <Text style={styles.copyButtonText}>
-                    {copiedIndex === index ? 'Copied!' : 'Copy'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={styles.historyButton}
-          onPress={() => {
-            if (!showHistory) {
-              loadChatHistory();
-            } else {
-              setShowHistory(false);
-            }
-          }}
-        >
-          <Text style={styles.historyButtonText}>
-            {showHistory
-              ? 'Hide Previous Conversations'
-              : 'Like a suggested outfit ?'}
-          </Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Outfit Recommendations</Text>
       </View>
-    </ScrollView>
+      
+      <ScrollView 
+        style={styles.container}
+        ref={scrollViewRef}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={[styles.mainContent, {opacity: fadeAnim}]}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialCommunityIcons name="tshirt-crew" size={28} color="#6c5ce7" />
+              <Text style={styles.title}>AI Stylist</Text>
+            </View>
+            
+            <Text style={styles.subtitle}>
+              Get personalized outfit recommendations based on your wardrobe
+            </Text>
+            
+            {enabled && weatherData && (
+              <View style={styles.weatherCard}>
+                <View style={styles.weatherHeader}>
+                  <MaterialCommunityIcons 
+                    name="weather-partly-cloudy" 
+                    size={24} 
+                    color="#74b9ff" 
+                  />
+                  <Text style={styles.weatherTitle}>Weather Info</Text>
+                </View>
+                <View style={styles.weatherDetails}>
+                  <Text style={styles.weatherTemp}>{Math.round(weatherData.temp)}°C</Text>
+                  <Text style={styles.weatherDesc}>{weatherData.weather}</Text>
+                  <Text style={styles.weatherExtra}>
+                    Humidity: {weatherData.humidity}% • Wind: {weatherData.wind} m/s
+                  </Text>
+                </View>
+              </View>
+            )}
+            
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Weather-based recommendations</Text>
+              <TouchableOpacity
+                style={[styles.toggle, enabled && styles.toggleEnabled]}
+                onPress={toggleWeather}
+                activeOpacity={0.8}
+              >
+                <Animated.View style={[styles.toggleCircle, enabled && styles.toggleCircleEnabled]} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={userInput}
+                onChangeText={setUserInput}
+                placeholder="What are you dressing for today?"
+                placeholderTextColor="rgba(255,255,255,0.6)"
+                multiline={false}
+                returnKeyType="send"
+                onSubmitEditing={handleSubmit}
+              />
+              <TouchableOpacity 
+                style={[styles.sendButton, (!userInput.trim() || isLoading) && styles.sendButtonDisabled]}
+                onPress={handleSubmit}
+                disabled={!userInput.trim() || isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons name="send" size={20} color="white" />
+                )}
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity
+              style={styles.suggestButton}
+              onPress={() => setUserInput("Suggest an outfit for a casual day out")}
+            >
+              <Text style={styles.suggestButtonText}>Casual Day Out</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.suggestRow}>
+              <TouchableOpacity
+                style={styles.suggestButtonSmall}
+                onPress={() => setUserInput("Suggest a formal outfit")}
+              >
+                <Text style={styles.suggestButtonText}>Formal</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.suggestButtonSmall}
+                onPress={() => setUserInput("What should I wear for a date?")}
+              >
+                <Text style={styles.suggestButtonText}>Date Night</Text>
+              </TouchableOpacity>
+            </View>
+           </View> 
+          {messages.length > 0 && (
+            <View style={styles.messagesContainer}>
+              {messages.map((msg, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.message,
+                    msg.sender === 'user' ? styles.userMessage : styles.botMessage,
+                  ]}
+                >
+                  {msg.sender === 'user' ? (
+                    <View style={styles.userBubble}>
+                      <Text style={styles.userMessageText}>{msg.text}</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.botBubble}>
+                      <Text style={styles.botMessageText}>{msg.text}</Text>
+                      <View style={styles.messageActions}>
+                        <TouchableOpacity
+                          style={styles.copyButton}
+                          onPress={() => copyToClipboard(msg.text, index)}
+                        >
+                          <Ionicons 
+                            name={copiedIndex === index ? "checkmark" : "copy-outline"} 
+                            size={16} 
+                            color={copiedIndex === index ? "#4cd137" : "#a4b0be"} 
+                          />
+                          <Text style={styles.copyButtonText}>
+                            {copiedIndex === index ? 'Copied' : 'Copy'}
+                          </Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          style={styles.saveButton}
+                          onPress={() => loveSuggestion(msg.text)}
+                        >
+                          <Ionicons name="heart-outline" size={16} color="#ff6b81" />
+                          <Text style={styles.saveButtonText}>Save</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+          
+          {messages.length > 0 && (
+            <TouchableOpacity
+              style={styles.historyButton}
+              onPress={() => {
+                if (!showHistory) {
+                  loadChatHistory();
+                } else {
+                  setShowHistory(false);
+                }
+              }}
+            >
+              <Text style={styles.historyButtonText}>
+                {showHistory
+                  ? 'Hide Previous Conversations'
+                  : 'View Chat History'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          {showHistory && chatHistory && chatHistory.length > 0 && (
+            <View style={styles.historyContainer}>
+              <Text style={styles.historyTitle}>Previous Conversations</Text>
+              {chatHistory.map((chat, index) => (
+                <View key={index} style={styles.historyItem}>
+                  <View style={styles.historyHeader}>
+                    <Text style={styles.historyDate}>
+                      {new Date(chat.createdAt).toLocaleDateString()}
+                    </Text>
+                    <Text style={styles.historyTime}>
+                      {new Date(chat.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </Text>
+                  </View>
+                  <View style={styles.historyContent}>
+                    <Text style={styles.historyQuestion}>{chat.message}</Text>
+                    <Text style={styles.historyResponse}>{chat.response}</Text>
+                  </View>
+                  <View style={styles.historyActions}>
+                    <TouchableOpacity 
+                      style={styles.historyActionButton}
+                      onPress={() => copyToClipboard(chat.response, `history-${index}`)}
+                    >
+                      <Ionicons 
+                        name={copiedIndex === `history-${index}` ? "checkmark" : "copy-outline"} 
+                        size={16} 
+                        color={copiedIndex === `history-${index}` ? "#4cd137" : "#a4b0be"} 
+                      />
+                      <Text style={styles.historyActionText}>
+                        {copiedIndex === `history-${index}` ? 'Copied' : 'Copy'}
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={styles.historyActionButton}
+                      onPress={() => loveSuggestion(chat.response)}
+                    >
+                      <Ionicons name="heart-outline" size={16} color="#ff6b81" />
+                      <Text style={styles.historyActionText}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </Animated.View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#1e1e2e',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#2f2f2f',
+    backgroundColor: '#1e1e2e',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#252836',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2d3748',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginLeft: 16,
+  },
+  mainContent: {
+    padding: 16,
   },
   card: {
-    backgroundColor: '#434343',
+    backgroundColor: '#252836',
     padding: 20,
-    borderRadius: 10,
-    margin: 20,
+    borderRadius: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: 'white',
-    textAlign: 'center',
-    marginBottom: 10,
+    marginLeft: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: 'white',
+    fontSize: 14,
+    color: '#a4b0be',
     textAlign: 'center',
     marginBottom: 20,
+    lineHeight: 20,
   },
-  toggleContainer: {
+  weatherCard: {
+    backgroundColor: 'rgba(108, 92, 231, 0.15)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(108, 92, 231, 0.3)',
+  },
+  weatherHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginBottom: 8,
+  },
+  weatherTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#74b9ff',
+    marginLeft: 8,
+  },
+  weatherDetails: {
+    alignItems: 'center',
+  },
+  weatherTemp: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  weatherDesc: {
+    fontSize: 16,
+    color: '#dfe6e9',
+    marginBottom: 8,
+    textTransform: 'capitalize',
+  },
+  weatherExtra: {
+    fontSize: 12,
+    color: '#a4b0be',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    color: '#dfe6e9',
   },
   toggle: {
     width: 50,
-    height: 25,
-    backgroundColor: '#dbd7d7',
-    borderRadius: 25,
+    height: 26,
+    backgroundColor: '#4b4b69',
+    borderRadius: 13,
     padding: 3,
     justifyContent: 'center',
   },
   toggleEnabled: {
-    backgroundColor: '#4a7ede',
+    backgroundColor: '#6c5ce7',
   },
   toggleCircle: {
     width: 20,
     height: 20,
     backgroundColor: 'white',
     borderRadius: 10,
+    transform: [{ translateX: 0 }],
   },
-  weatherStatus: {
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 20,
+  toggleCircleEnabled: {
+    transform: [{ translateX: 24 }],
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   input: {
-    backgroundColor: '#666666',
-    borderRadius: 23,
-    padding: 15,
+    flex: 1,
+    backgroundColor: '#323546',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     color: 'white',
-    marginBottom: 15,
-    borderWidth: 2,
-    borderColor: 'white',
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: '#4b4b69',
   },
-  button: {
-    backgroundColor: '#007bff',
-    padding: 15,
-    borderRadius: 23,
+  sendButton: {
+    width: 42,
+    height: 42,
+    backgroundColor: '#6c5ce7',
+    borderRadius: 21,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
+    marginLeft: 10,
   },
-  buttonDisabled: {
-    backgroundColor: '#4a4a4a',
+  sendButtonDisabled: {
+    backgroundColor: '#4b4b69',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+  suggestButton: {
+    backgroundColor: '#323546',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#4b4b69',
+  },
+  suggestRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  suggestButtonSmall: {
+    backgroundColor: '#323546',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    alignItems: 'center',
+    flex: 0.48,
+    borderWidth: 1,
+    borderColor: '#4b4b69',
+  },
+  suggestButtonText: {
+    color: '#a4b0be',
+    fontSize: 14,
+    fontWeight: '500',
   },
   messagesContainer: {
-    marginTop: 20,
-    maxHeight: 400,
+    marginTop: 24,
   },
   message: {
-    padding: 12,
-    borderRadius: 18,
-    marginBottom: 10,
-    maxWidth: '80%',
+    marginBottom: 16,
+    maxWidth: '90%',
   },
   userMessage: {
-    backgroundColor: '#3b82f6',
     alignSelf: 'flex-end',
   },
   botMessage: {
-    backgroundColor: '#f1f1f1',
     alignSelf: 'flex-start',
   },
-  messageText: {
+  userBubble: {
+    backgroundColor: '#6c5ce7',
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  botBubble: {
+    backgroundColor: '#323546',
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  userMessageText: {
     color: 'white',
-    fontSize: 16,
-    marginBottom: 5,
+    fontSize: 15,
+  },
+  botMessageText: {
+    color: '#dfe6e9',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  messageActions: {
+    flexDirection: 'row',
+    marginTop: 8,
   },
   copyButton: {
-    padding: 5,
-    borderRadius: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    marginRight: 8,
   },
   copyButtonText: {
-    color: 'white',
+    color: '#a4b0be',
     fontSize: 12,
+    marginLeft: 4,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  saveButtonText: {
+    color: '#a4b0be',
+    fontSize: 12,
+    marginLeft: 4,
   },
   historyButton: {
-    backgroundColor: '#007bff',
-    padding: 15,
-    borderRadius: 23,
+    backgroundColor: '#323546',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 24,
     alignItems: 'center',
-    marginTop: 20,
-    borderWidth: 2,
-    borderColor: 'white',
+    marginTop: 24,
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: '#4b4b69',
   },
   historyButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#dfe6e9',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  historyContainer: {
+    marginTop: 24,
+    backgroundColor: '#1e1e2e',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#4b4b69',
+  },
+  historyTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#dfe6e9',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  historyItem: {
+    backgroundColor: '#252836',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(108, 92, 231, 0.2)',
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#a4b0be',
+  },
+  historyTime: {
+    fontSize: 12,
+    color: '#a4b0be',
+  },
+  historyContent: {
+    marginBottom: 12,
+  },
+  historyQuestion: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6c5ce7',
+    marginBottom: 8,
+  },
+  historyResponse: {
+    fontSize: 14,
+    color: '#dfe6e9',
+    lineHeight: 20,
+  },
+  historyActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  historyActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    marginLeft: 8,
+  },
+  historyActionText: {
+    color: '#a4b0be',
+    fontSize: 12,
+    marginLeft: 4,
   },
 });
 
-export default Recommendations; 
+export default Recommendations;
