@@ -10,12 +10,10 @@ import cookieParser from 'cookie-parser';
 
 import UserRoutes from '../routes/user_routes.js';
 import AuthRoutes from '../routes/auth_routes.js';
-// import GoogleLoginRoutes from '../routes/auth.google.js';
-// import facebookRoutes from '../routes/auth.facebook.js'
 import Chatbot from '../routes/chat.js';
 import ShareRoutes from '../routes/share.js';
 import imageGenerateRoute from '../routes/image.js';
-import profileRoutes from '../routes/profilebackend.js'; // 👈 Added from second file
+import profileRoutes from '../routes/profilebackend.js';
 import path from 'path';
 import cors from 'cors';
 import connectCloudinary from '../db/cloudinary.js';
@@ -55,10 +53,10 @@ app.get("/imageuploading",(req,res)=>{
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Save files to the "uploads" folder
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Rename the file with a timestamp and original extension
+    cb(null, Date.now() + path.extname(file.originalname)); 
   }
 });
 
