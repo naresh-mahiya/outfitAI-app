@@ -126,7 +126,7 @@ const AboutUs = ({ navigation }) => {
               <View style={styles.teamMemberCard}>
                 <View style={styles.teamMemberHeader}>
                   <View style={styles.avatarContainer}>
-                    <Text style={styles.avatarText}>PR</Text>
+                    <Text style={styles.avatarText}>NM</Text>
                   </View>
                   <View style={styles.teamMemberInfo}>
                     <Text style={styles.memberName}>Naresh Mahiya</Text>
