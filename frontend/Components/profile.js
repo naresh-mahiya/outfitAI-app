@@ -595,7 +595,10 @@ const Profile = ({ route }) => {
                 style={styles.collapsibleHeader}
                 onPress={() => setShowClothesItems(!showClothesItems)}
               >
-                <Text style={styles.collapsibleTitle}>My Clothes</Text>
+                <View style={styles.collapsibleTitleContainer}>
+                  <Ionicons name="shirt-outline" size={22} color="#6C5CE7" style={styles.collapsibleIcon} />
+                  <Text style={styles.collapsibleTitle}>My Clothes</Text>
+                </View>
                 <Ionicons 
                   name={showClothesItems ? "chevron-up" : "chevron-down"} 
                   size={24} 
@@ -623,7 +626,10 @@ const Profile = ({ route }) => {
                     style={styles.collapsibleHeader}
                     onPress={() => setShowWeeklyItems(!showWeeklyItems)}
                   >
-                    <Text style={styles.collapsibleTitle}>Weekly Outfit Plan</Text>
+                    <View style={styles.collapsibleTitleContainer}>
+                      <Ionicons name="calendar-outline" size={22} color="#6C5CE7" style={styles.collapsibleIcon} />
+                      <Text style={styles.collapsibleTitle}>Weekly Outfit Plan</Text>
+                    </View>
                     <Ionicons 
                       name={showWeeklyItems ? "chevron-up" : "chevron-down"} 
                       size={24} 
@@ -633,20 +639,48 @@ const Profile = ({ route }) => {
                   
                   {showWeeklyItems && (
                     typeof weeklyclothes === 'string' ? (
-                      <View style={styles.clothCard}>
-                        <Text style={styles.clothText}>{weeklyclothes}</Text>
+                      <View style={styles.weeklyOutfitContainer}>
+                        <Text style={styles.weeklyOutfitText}>{weeklyclothes}</Text>
                       </View>
                     ) : Array.isArray(weeklyclothes) && (
                       <FlatList
                         data={weeklyclothes}
                         keyExtractor={(item, index) => `weekly-${index}`}
-                        renderItem={({ item }) => (
-                          <View style={styles.clothCard}>
-                            <Text style={styles.clothText}>{typeof item === 'string' ? item : JSON.stringify(item)}</Text>
-                          </View>
-                        )}
+                        renderItem={({ item }) => {
+                          if (typeof item === 'string') {
+                            // Try to parse the string format "Day: Outfit"
+                            const colonIndex = item.indexOf(':');
+                            if (colonIndex !== -1) {
+                              const day = item.substring(0, colonIndex).trim();
+                              const outfit = item.substring(colonIndex + 1).trim();
+                              return (
+                                <View style={styles.weeklyOutfitContainer}>
+                                  <Text style={styles.weeklyOutfitDay}>{day}</Text>
+                                  <Text style={styles.weeklyOutfitText}>{outfit}</Text>
+                                </View>
+                              );
+                            } else {
+                              // If no colon found, display the whole string
+                              return (
+                                <View style={styles.weeklyOutfitContainer}>
+                                  <Text style={styles.weeklyOutfitText}>{item}</Text>
+                                </View>
+                              );
+                            }
+                          } else if (typeof item === 'object') {
+                            // Handle object format
+                            return (
+                              <View style={styles.weeklyOutfitContainer}>
+                                <Text style={styles.weeklyOutfitText}>
+                                  {JSON.stringify(item)}
+                                </Text>
+                              </View>
+                            );
+                          }
+                          return null;
+                        }}
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.clothesList}
+                        contentContainerStyle={styles.weeklyOutfitsContainer}
                       />
                     )
                   )}
@@ -864,7 +898,7 @@ const Profile = ({ route }) => {
               style={[styles.tabButton, activeTab === 'favorites' && styles.activeTabButton]}
               onPress={() => setActiveTab('favorites')}
             >
-              <Text style={[styles.tabButtonText, activeTab === 'favorites' && styles.activeTabButtonText]}>Favorites</Text>
+              <Text style={[styles.tabButtonText, activeTab === 'favorites' && styles.activeTabButtonText]}>Favorite</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -1157,39 +1191,47 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#2a2a2a',
+    backgroundColor: '#1E1E1E',
   },
   headerText: {
     fontSize: 28,
     fontWeight: '700',
     color: '#fff',
     letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
     borderBottomColor: '#2a2a2a',
+    paddingVertical: 5,
   },
   tabButton: {
     flex: 1,
     paddingVertical: 15,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
   },
   activeTabButton: {
     borderBottomWidth: 3,
-    borderBottomColor: '#3498db',
+    borderBottomColor: '#6C5CE7',
   },
   tabButtonText: {
     color: '#aaa',
     fontSize: 16,
     fontWeight: '500',
+    marginLeft: 5,
   },
   activeTabButtonText: {
-    color: '#3498db',
+    color: '#6C5CE7',
     fontWeight: '600',
   },
   contentContainer: {
@@ -1202,6 +1244,7 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     alignItems: 'center',
+    width: '100%',
   },
   // Profile Tab Styles
   profileImage: {
@@ -1210,23 +1253,40 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     marginBottom: 25,
     borderWidth: 3,
-    borderColor: '#3498db',
+    borderColor: '#6C5CE7',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6C5CE7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   profileImagePlaceholder: {
     width: 120,
     height: 120,
     borderRadius: 60,
     marginBottom: 25,
-    backgroundColor: '#3498db',
+    backgroundColor: '#6C5CE7',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: '#2980b9',
-    shadowColor: '#3498db',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    borderColor: '#5D4ED6',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6C5CE7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   profileImagePlaceholderText: {
     fontSize: 48,
@@ -1234,16 +1294,22 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   infoCard: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 15,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
     padding: 20,
     width: '100%',
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   infoRow: {
     flexDirection: 'row',
@@ -1252,12 +1318,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   infoLabel: {
-    color: '#aaa',
+    color: '#AAAAAA',
     fontSize: 16,
     fontWeight: '500',
   },
   infoValue: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     maxWidth: '60%',
@@ -1265,23 +1331,32 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#333',
+    backgroundColor: '#2A2A2A',
     width: '100%',
   },
   actionButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#6C5CE7',
     paddingVertical: 14,
     paddingHorizontal: 30,
-    borderRadius: 10,
-    marginTop: 5,
-    shadowColor: '#3498db',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 3,
+    borderRadius: 12,
+    marginTop: 15,
+    marginBottom: 10,
+    width: '100%',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6C5CE7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   actionButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 0.5,
@@ -1297,7 +1372,7 @@ const styles = StyleSheet.create({
   clothesTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
   },
   addClothesButton: {
     backgroundColor: '#3498db',
@@ -1311,105 +1386,126 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   clothesList: {
-    width: '100%',
+    paddingVertical: 10,
   },
   clothCard: {
-    backgroundColor: '#1e1e1e',
-    padding: 15,
+    backgroundColor: '#2A2A2A',
     borderRadius: 10,
+    padding: 16,
     marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: '#3498db',
+    borderWidth: 1,
+    borderColor: '#333333',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   clothText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    color: '#dfe6e9',
+  },
+  weeklyOutfitContainer: {
+    marginTop: 10,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 10,
+  },
+  weeklyOutfitDay: {
+    color: '#6C5CE7',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  weeklyOutfitText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  weeklyOutfitsContainer: {
+    paddingVertical: 10,
   },
   // Favorites styles
   favoritesContainer: {
-    flex: 1,
-    padding: 16,
+    width: '100%',
+    alignItems: 'center',
   },
   favoritesTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  favoritesList: {
-    paddingBottom: 16,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 20,
+    alignSelf: 'flex-start',
   },
   favoriteCard: {
-    backgroundColor: '#252836',
+    backgroundColor: '#1E1E1E',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(108, 92, 231, 0.2)',
+    marginBottom: 15,
+    width: '100%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   favoriteText: {
-    fontSize: 15,
-    color: '#dfe6e9',
-    lineHeight: 22,
-    marginBottom: 8,
+    color: '#FFFFFF',
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 12,
   },
   favoriteActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
   favoriteActionButton: {
-    backgroundColor: 'rgba(108, 92, 231, 0.2)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    marginLeft: 8,
+    backgroundColor: '#2A2A2A',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 10,
   },
   favoriteActionText: {
-    color: '#a4b0be',
-    fontSize: 12,
+    color: '#6C5CE7',
+    fontWeight: '600',
+    fontSize: 14,
   },
-  emptyContainer: {
-    flex: 1,
-    backgroundColor: '#1e1e2e',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyIcon: {
-    fontSize: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#aaa',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  emptyStateButton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 10,
-  },
-  emptyStateButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  favoritesList: {
+    width: '100%',
+    paddingBottom: 20,
   },
   // Settings Tab Styles
   settingsCard: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 15,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
     width: '100%',
     marginBottom: 20,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   settingsItem: {
     paddingVertical: 16,
@@ -1421,29 +1517,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   settingsItemText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    color: '#fff',
+    fontWeight: '500',
   },
   settingsItemIcon: {
+    color: '#6C5CE7',
     fontSize: 20,
-    color: '#aaa',
+    fontWeight: '600',
   },
   settingsDivider: {
     height: 1,
-    backgroundColor: '#333',
+    backgroundColor: '#2A2A2A',
+    marginHorizontal: 20,
   },
   logoutButton: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#FF3B30',
     paddingVertical: 14,
     paddingHorizontal: 30,
-    borderRadius: 10,
-    alignSelf: 'center',
-    marginTop: 20,
+    borderRadius: 12,
+    marginTop: 15,
+    width: '100%',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(255, 59, 48, 0.4)',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   logoutButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   // Loading & Error Styles
   loadingContainer: {
@@ -1489,17 +1601,28 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   formContainer: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 15,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
     padding: 20,
     width: '100%',
     maxWidth: 400,
     maxHeight: '80%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   formTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFFFFF',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -1508,62 +1631,77 @@ const styles = StyleSheet.create({
   },
   formLabel: {
     fontSize: 16,
-    color: '#3498db',
-    marginBottom: 8,
     fontWeight: '500',
+    color: '#CCCCCC',
+    marginBottom: 8,
   },
   formInput: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 10,
-    padding: 15,
-    color: '#fff',
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    color: '#FFFFFF',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#3A3A3A',
   },
   textArea: {
-    height: 100,
+    minHeight: 100,
     textAlignVertical: 'top',
   },
   dropdownButton: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 10,
-    padding: 15,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#3A3A3A',
   },
   dropdownButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
   },
   dropdownIcon: {
-    color: '#3498db',
+    color: '#6C5CE7',
     fontSize: 16,
   },
   dropdownList: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 10,
-    marginTop: 5,
-    overflow: 'hidden',
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    marginTop: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#3A3A3A',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   dropdownItem: {
-    padding: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: '#3A3A3A',
   },
   selectedDropdownItem: {
-    backgroundColor: '#3498db',
+    backgroundColor: 'rgba(108, 92, 231, 0.2)',
   },
   dropdownItemText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
   },
   selectedDropdownItemText: {
+    color: '#6C5CE7',
     fontWeight: 'bold',
   },
   formActions: {
@@ -1573,23 +1711,35 @@ const styles = StyleSheet.create({
   },
   formButton: {
     flex: 1,
-    padding: 15,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 5,
   },
   cancelButton: {
-    backgroundColor: '#7f8c8d',
+    backgroundColor: '#2A2A2A',
+    marginRight: 10,
   },
   saveButton: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#6C5CE7',
+    marginLeft: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6C5CE7',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   disabledButton: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -1597,171 +1747,104 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 10,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#3A3A3A',
   },
   passwordInput: {
     flex: 1,
-    color: '#fff',
-    padding: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    color: '#FFFFFF',
     fontSize: 16,
   },
   eyeIcon: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
   },
   eyeIconText: {
     fontSize: 18,
   },
-  // Collapsible Section Styles
-  collapsibleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  collapsibleTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  
-  // Shop Tab Styles
-  shopHeader: {
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  shopTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  shopSubtitle: {
-    fontSize: 16,
-    color: '#AAAAAA',
-    textAlign: 'center',
-  },
-  shopCategories: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  categoryCard: {
-    width: '48%',
-    backgroundColor: '#1E1E1E',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  categoryText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 12,
-  },
-  featuredSection: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  featuredTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 16,
-    letterSpacing: 0.5,
-  },
-  comingSoonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#6C5CE7',
-    marginBottom: 16,
-  },
-  shopDescription: {
-    color: '#CCCCCC',
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
-  },
-  notifyButton: {
-    backgroundColor: '#6C5CE7',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    shadowColor: '#6C5CE7',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  notifyButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  
-  // Share Link Modal Styles
+  // Share Modal Styles
   shareContainer: {
     marginBottom: 20,
   },
   shareText: {
     fontSize: 16,
-    color: '#fff',
-    marginBottom: 10,
+    color: '#CCCCCC',
+    marginBottom: 12,
   },
   linkContainer: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 10,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
     padding: 15,
     borderWidth: 1,
-    borderColor: '#3498db',
+    borderColor: '#3A3A3A',
   },
   linkText: {
-    color: '#3498db',
+    color: '#6C5CE7',
     fontSize: 16,
-    fontWeight: '500',
   },
   shareActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   copyButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#6C5CE7',
+    flex: 1,
+    marginRight: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#6C5CE7',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   closeButton: {
-    backgroundColor: '#7f8c8d',
+    backgroundColor: '#2A2A2A',
+    flex: 1,
+    marginLeft: 10,
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  collapsibleTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  collapsibleIcon: {
+    marginRight: 12,
+  },
+  collapsibleTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 });
 
