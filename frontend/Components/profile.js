@@ -813,7 +813,7 @@ const Profile = ({ route }) => {
               
               <View style={styles.settingsDivider} />
               
-              <TouchableOpacity style={styles.settingsItem}>
+              {/* <TouchableOpacity style={styles.settingsItem}>
                 <View style={styles.settingsItemContent}>
                   <Text style={styles.settingsItemText}>Privacy Settings</Text>
                   <Text style={styles.settingsItemIcon}>›</Text>
@@ -827,7 +827,7 @@ const Profile = ({ route }) => {
                   <Text style={styles.settingsItemText}>Help & Support</Text>
                   <Text style={styles.settingsItemIcon}>›</Text>
                 </View>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               
               <View style={styles.settingsDivider} />
               

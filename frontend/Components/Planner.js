@@ -18,6 +18,8 @@ import * as Location from "expo-location";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import {API_URL} from './config'
+import { useRoute, useNavigation } from '@react-navigation/native';
+
 const Planner = () => {
   const [weatherSummaries, setWeatherSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,9 @@ const Planner = () => {
   const [weather, setWeather] = useState("Off");
   const [input, setInput] = useState("");
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const route = useRoute();
+  const navigation = useNavigation();
+  const token = route.params?.token;
 
   const backendUrl = API_URL;
 
@@ -188,17 +193,28 @@ const Planner = () => {
   };
 
   const copytoprofile = async () => {
+    if (!token) {
+      Alert.alert("Error", "Authentication token is missing. Please log in again.");
+      return;
+    }
+    
     try {
       const response = await fetch(`${backendUrl}/user/copytoprofileweekcloths`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ clothesforweek: suggestionMain }),
       });
       const data = await response.json();
-      Alert.alert("Success", "Outfits saved to profile");
+      
+      if (response.ok) {
+        Alert.alert("Success", "Outfits saved to profile");
+        navigation.navigate("Profile",{token:token});
+      } else {
+        throw new Error(data.message || "Failed to save outfits");
+      }
     } catch (err) {
       console.error("Error saving to profile:", err);
       Alert.alert("Error", "Failed to save outfits to profile");
