@@ -15,7 +15,8 @@ import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { API_URL } from './config';
-const ShareClothes = ({route}) => {
+const ShareClothes = () => {
+  const route = useRoute();
   const [sharecloth, setSharedCloth] = useState([]);
   const [username, setUsername] = useState('Users');
   const [imageUrl, setImageUrl] = useState('');
@@ -27,10 +28,7 @@ const ShareClothes = ({route}) => {
   const id=route.params?.id
   // Define the frontend URL for sharing
   const frontendUrl = "https://outfit-ai-liart.vercel.app";
-  // Create the full shareable link
-  const shareableLink = `${frontendUrl}/share/${id}`;
-  console.log('share details', token, id);
-  console.log('Shareable link:', shareableLink);
+  console.log('share details', token , id )
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -109,45 +107,13 @@ const ShareClothes = ({route}) => {
   };
 
   const shareWithFriends = async () => {
+    const url = `${frontendUrl}/share/${id}`;
     try {
-      console.log("Sharing outfit to friends...");
-      
-      const url = `${frontendUrl}/share/${id}`;
-      const shareMessage = `Check out this outfit I shared with you! ${url}`;
-      
-      try {
-        const result = await Share.share({
-          message: shareMessage,
-          title: 'OutfitAI Recommendation'
-        }, {
-          dialogTitle: 'Share Your Outfit',
-          subject: 'OutfitAI Recommendation'
-        });
-        
-        if (result.action === Share.sharedAction) {
-          if (result.activityType) {
-            console.log(`Shared with ${result.activityType}`);
-          } else {
-            console.log('Shared successfully');
-          }
-        } else if (result.action === Share.dismissedAction) {
-          console.log('Share dismissed');
-        }
-        
-        return true;
-      } catch (shareError) {
-        console.error("Error using Share API:", shareError);
-        Alert.alert(
-          "Sharing Failed",
-          "Could not share this outfit. Please try again.",
-          [{ text: "OK" }]
-        );
-        return false;
-      }
+      await Share.share({
+        message: `Check out this outfit I shared with you! ${url}`,
+      });
     } catch (error) {
-      console.error("Error sharing outfit:", error);
-      Alert.alert("Sharing Failed", "Could not share this outfit. Please try again.");
-      return false;
+      console.error('Error sharing:', error);
     }
   };
 
@@ -206,22 +172,6 @@ const ShareClothes = ({route}) => {
         <Text style={styles.clothesText}>{sharecloth}</Text>
       </View>
 
-      {/* Shareable Link Section */}
-      <View style={styles.linkContainer}>
-        <Text style={styles.linkTitle}>Share this outfit:</Text>
-        <View style={styles.linkBox}>
-          <Text style={styles.linkText} numberOfLines={1} ellipsizeMode="middle">
-            {shareableLink}
-          </Text>
-        </View>
-        <View style={styles.linkActions}>
-          <TouchableOpacity style={styles.linkButton} onPress={copyToClipboard}>
-            <Ionicons name="copy-outline" size={18} color="white" />
-            <Text style={styles.linkButtonText}>{copySuccess ? "Copied!" : "Copy Link"}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
       <View style={styles.imageContainer}>
         <Text style={styles.sectionTitle}>Outfits Preview</Text>
         {imageUrl ? (
@@ -241,19 +191,7 @@ const ShareClothes = ({route}) => {
       </View>
 
       <View style={styles.shareContainer}>
-        <TouchableOpacity
-          style={styles.copyButton}
-          onPress={copyToClipboard}
-        >
-          <Ionicons
-            name={copySuccess ? 'checkmark' : 'copy'}
-            size={24}
-            color="white"
-          />
-          <Text style={styles.buttonText}>
-            {copySuccess ? 'Copied!' : 'Copy Link'}
-          </Text>
-        </TouchableOpacity>
+        
 
         <TouchableOpacity
           style={styles.shareButton}
@@ -357,50 +295,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
   },
-  linkContainer: {
-    backgroundColor: '#2a2a2a',
-    margin: 16,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
-  },
-  linkTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  linkBox: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#3498db',
-  },
-  linkText: {
-    color: '#3498db',
-    fontSize: 14,
-  },
-  linkActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  linkButton: {
-    backgroundColor: '#3498db',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  linkButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
   shareContainer: {
     padding: 16,
   },
@@ -430,34 +324,56 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   shareOptions: {
-    marginTop: 16,
+    marginTop: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     flexWrap: 'wrap',
+    backgroundColor: '#222',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   shareOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    marginHorizontal: 5,
     minWidth: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   whatsapp: {
     backgroundColor: '#25D366',
+    borderColor: '#1da851',
   },
   twitter: {
     backgroundColor: '#1DA1F2',
+    borderColor: '#0d8ecf',
   },
   email: {
     backgroundColor: '#FF6F61',
+    borderColor: '#e05a4d',
   },
   optionText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+    fontWeight: '700',
+    marginLeft: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
 

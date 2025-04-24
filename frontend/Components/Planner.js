@@ -17,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
-
+import {API_URL} from './config'
 const Planner = () => {
   const [weatherSummaries, setWeatherSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ const Planner = () => {
   const [input, setInput] = useState("");
   const [copiedIndex, setCopiedIndex] = useState(null);
 
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  const backendUrl = API_URL;
 
   const getWeatherDescription = (code) => {
     const descriptions = {
@@ -217,27 +217,67 @@ const Planner = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <ScrollView style={styles.scrollView}>
-        <View style={styles.toggleContainer}>
+        <View style={styles.headerSection}>
+          <Text style={styles.headerTitle}>Weekly Outfit Planner</Text>
+          <Text style={styles.headerSubtitle}>Plan your outfits for the entire week</Text>
+        </View>
+
+        {weatherSummaries.length > 0 && (
+          <View style={styles.weatherSection}>
+            <Text style={styles.sectionTitle}>Weather Forecast</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weatherScroll}>
+              {weatherSummaries.map((day, index) => (
+                <View key={index} style={styles.weatherCard}>
+                  <Text style={styles.dateText}>
+                    {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </Text>
+                  <View style={styles.weatherRow}>
+                    <Text style={styles.weatherLabel}>Weather:</Text>
+                    <Text style={styles.weatherValue}>{day.weather}</Text>
+                  </View>
+                  <View style={styles.weatherRow}>
+                    <Text style={styles.weatherLabel}>Temperature:</Text>
+                    <Text style={styles.weatherValue}>{day.temp}°C</Text>
+                  </View>
+                  <View style={styles.weatherRow}>
+                    <Text style={styles.weatherLabel}>Range:</Text>
+                    <Text style={styles.weatherValue}>{day.temp_min}° - {day.temp_max}°C</Text>
+                  </View>
+                  <View style={styles.weatherRow}>
+                    <Text style={styles.weatherLabel}>Humidity:</Text>
+                    <Text style={styles.weatherValue}>{day.humidity}%</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        <LinearGradient
+          colors={['#1E1E1E', '#252525']}
+          style={styles.toggleContainer}
+        >
           <View style={styles.toggleRow}>
             <Text style={styles.toggleText}>
-              Weather and location based recommendation: {isOn ? "On" : "Off"}
+              Weather-based recommendations
             </Text>
             <Switch
               value={isOn}
               onValueChange={handleChange}
-              trackColor={{ false: "#767577", true: "#81b0ff" }}
-              thumbColor={isOn ? "#0a84ff" : "#f4f3f4"}
+              trackColor={{ false: "#444", true: "#8A7BFF" }}
+              thumbColor={isOn ? "#6C5CE7" : "#f4f3f4"}
+              ios_backgroundColor="#444"
             />
           </View>
 
           <Text style={styles.title}>
-            Get outfit suggestion from clothes you uploaded for a week.
+            Get outfit suggestions for your upcoming week
           </Text>
 
           <TextInput
             style={styles.input}
-            placeholder="Enter events you might attend this week"
-            placeholderTextColor="#666"
+            placeholder="Enter events you might attend this week (meetings, parties, etc.)"
+            placeholderTextColor="#888"
             multiline
             value={input}
             onChangeText={setInput}
@@ -249,50 +289,66 @@ const Planner = () => {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="white" />
+              <ActivityIndicator color="white" size="small" />
             ) : (
-              <Text style={styles.buttonText}>Get recommendation</Text>
+              <>
+                <Ionicons name="shirt-outline" size={20} color="white" style={{marginRight: 8}} />
+                <Text style={styles.buttonText}>Generate Weekly Outfits</Text>
+              </>
             )}
           </TouchableOpacity>
-        </View>
+        </LinearGradient>
 
-        <View style={styles.recommendation}>
+        <LinearGradient
+          colors={['#1E1E1E', '#252525']}
+          style={styles.recommendation}
+        >
+          <Text style={styles.sectionTitle}>Your Weekly Outfits</Text>
+          
           {loading ? (
-            <ActivityIndicator size="large" color="#0a84ff" />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6C5CE7" />
+              <Text style={styles.loadingText}>Generating your personalized outfits...</Text>
+            </View>
           ) : suggestionMain ? (
             <Text style={styles.suggestionText}>{suggestionMain}</Text>
           ) : (
-            <Text style={styles.placeholderText}>
-              Enter the week task and click get recommendation button to get outfits.
-            </Text>
+            <View style={styles.emptyContainer}>
+              <Ionicons name="calendar-outline" size={50} color="#555" />
+              <Text style={styles.placeholderText}>
+                Enter your weekly events above and click "Generate Weekly Outfits" to get personalized recommendations.
+              </Text>
+            </View>
           )}
 
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity
-              style={[styles.actionButton, !suggestionMain && styles.buttonDisabled]}
-              onPress={copytoprofile}
-              disabled={!suggestionMain}
-            >
-              <Ionicons name="save" size={20} color="white" />
-              <Text style={styles.actionButtonText}>Copy to profile</Text>
-            </TouchableOpacity>
+          {suggestionMain && (
+            <View style={styles.buttonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, !suggestionMain && styles.buttonDisabled]}
+                onPress={copytoprofile}
+                disabled={!suggestionMain}
+              >
+                <Ionicons name="save-outline" size={20} color="white" />
+                <Text style={styles.actionButtonText}>Save to Profile</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionButton, !suggestionMain && styles.buttonDisabled]}
-              onPress={() => copyToClipboard(suggestionMain)}
-              disabled={!suggestionMain}
-            >
-              <Ionicons
-                name={copiedIndex === 0 ? "checkmark" : "copy"}
-                size={20}
-                color="white"
-              />
-              <Text style={styles.actionButtonText}>
-                {copiedIndex === 0 ? "Copied!" : "Copy outfits"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <TouchableOpacity
+                style={[styles.actionButton, !suggestionMain && styles.buttonDisabled]}
+                onPress={() => copyToClipboard(suggestionMain)}
+                disabled={!suggestionMain}
+              >
+                <Ionicons
+                  name={copiedIndex === 0 ? "checkmark" : "copy-outline"}
+                  size={20}
+                  color="white"
+                />
+                <Text style={styles.actionButtonText}>
+                  {copiedIndex === 0 ? "Copied!" : "Copy to Clipboard"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </LinearGradient>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -301,94 +357,231 @@ const Planner = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#121212",
   },
   scrollView: {
     flex: 1,
+    padding: 20,
+  },
+  headerSection: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  headerTitle: {
+    color: "#FFFFFF",
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 8,
+    textAlign: "center",
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(108, 92, 231, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  headerSubtitle: {
+    color: "#AAAAAA",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  weatherSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 12,
+    paddingHorizontal: 5,
+    letterSpacing: 0.3,
+  },
+  weatherScroll: {
+    paddingBottom: 10,
+  },
+  weatherCard: {
+    backgroundColor: "#1E1E1E",
+    borderRadius: 16,
     padding: 16,
+    marginRight: 12,
+    minWidth: 200,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  dateText: {
+    color: "#6C5CE7",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  weatherRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  weatherLabel: {
+    color: "#AAAAAA",
+    fontSize: 14,
+  },
+  weatherValue: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "500",
   },
   toggleContainer: {
-    backgroundColor: "#2a2a2a",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#333",
   },
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 16,
+    paddingVertical: 6,
   },
   toggleText: {
-    color: "white",
+    color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "500",
+    letterSpacing: 0.3,
   },
   title: {
-    color: "white",
-    fontSize: 18,
+    color: "#FFFFFF",
+    fontSize: 22,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 20,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   input: {
-    backgroundColor: "#3a3a3a",
-    color: "white",
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: "#2A2A2A",
+    color: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
     minHeight: 120,
-    marginBottom: 16,
+    marginBottom: 20,
     textAlignVertical: "top",
+    borderWidth: 1,
+    borderColor: "#444",
+    fontSize: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   button: {
-    backgroundColor: "#0a84ff",
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: "#6C5CE7",
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: "#6C5CE7",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
     color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   recommendation: {
-    backgroundColor: "#2a2a2a",
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     flex: 1,
+    marginTop: 10,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
+  },
+  loadingText: {
+    color: "#AAAAAA",
+    marginTop: 15,
+    fontSize: 16,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
   },
   suggestionText: {
-    color: "white",
+    color: "#FFFFFF",
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 26,
+    letterSpacing: 0.3,
+    padding: 10,
   },
   placeholderText: {
-    color: "#666",
+    color: "#888",
     fontSize: 16,
     textAlign: "center",
+    fontStyle: "italic",
+    marginTop: 15,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
   buttonsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginTop: 24,
+    marginTop: 30,
+    flexWrap: "wrap",
   },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a84ff",
-    padding: 12,
-    borderRadius: 8,
-    minWidth: 140,
+    backgroundColor: "#6C5CE7",
+    padding: 14,
+    borderRadius: 12,
+    minWidth: 150,
     justifyContent: "center",
+    marginBottom: 10,
+    shadowColor: "#6C5CE7",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#8A7BFF",
   },
   actionButtonText: {
     color: "white",
     fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
+    fontWeight: "700",
+    marginLeft: 10,
+    letterSpacing: 0.3,
   },
 });
 
-export default Planner; 
+export default Planner;

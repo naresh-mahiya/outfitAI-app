@@ -204,6 +204,7 @@ const token=route.params?.token
 
       if (response.ok) {
         Alert.alert('Success', 'Outfit saved to your favorites!');
+        navigation.navigate("Profile",{token:token})
       } else {
         Alert.alert('Error', 'Failed to save outfit');
       }

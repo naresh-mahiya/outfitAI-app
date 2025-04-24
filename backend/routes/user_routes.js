@@ -356,5 +356,36 @@ router.get("/clothsforweek", authenticate, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+router.post("/copytoprofileweekcloths", authenticate, async (req, res) => {
+  const userid = req.user.username;
+  console.log("User details of clothes:", userid);
+
+  const user = await User.findOne({ username: userid }); // <- changed to findOne
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // console.log('User is final:', user);
+  // console.log('Weekly clothes to save:', req.body.clothesforweek);
+
+  user.clothessuggestionforweek = req.body.clothesforweek;
+  await user.save();
+
+  res.status(200).json({ message: "Weekly clothing suggestion saved!" });
+});
+
+
+router.get("/getuserdetails", authenticate, async (req, res) => {
+  const userid = req.user.id;
+  const user = await User.findById(userid);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+  res.json({
+    age: user.age,
+    preferences: user.preferences,
+    gender: user.gender,
+  });
+});
 
 export default router;

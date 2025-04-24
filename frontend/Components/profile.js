@@ -20,6 +20,8 @@ import {
   Share,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import Shop from "./Shop";
 import { API_URL } from "./config";
 import { PermissionsAndroid, Platform } from "react-native";
 
@@ -45,7 +47,9 @@ const Profile = ({ route }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
-  
+  const [weeklyclothes,setweeklyclothes]=useState(false)
+  const [showClothesItems, setShowClothesItems] = useState(false)
+  const [showWeeklyItems, setShowWeeklyItems] = useState(false)
   // Form state
   const [showForm, setShowForm] = useState(false);
   const [age, setAge] = useState('');
@@ -204,6 +208,10 @@ const Profile = ({ route }) => {
       const data = await response.json();
       if (data.favourites) {
         setFavorites(data.favourites);
+      }
+      if(data.clothforweek){
+        console.log("weekly clothes",data.clothforweek)
+        setweeklyclothes(data.clothforweek);
       }
       setFavoritesLoading(false);
     } catch (error) {
@@ -564,6 +572,7 @@ const Profile = ({ route }) => {
             <TouchableOpacity style={styles.actionButton} onPress={navigateward}>
               <Text style={styles.actionButtonText}>My Wardrobe</Text>
             </TouchableOpacity>
+            
           </Animated.View>
         );
         
@@ -582,23 +591,80 @@ const Profile = ({ route }) => {
                 </TouchableOpacity>
               </View>
               
-              <FlatList
-                data={clothes}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item, index }) => (
-                  <View style={styles.clothCard}>
-                    <Text style={styles.clothText}>{item}</Text>
-                  </View>
-                )}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.clothesList}
-              />
+              <TouchableOpacity 
+                style={styles.collapsibleHeader}
+                onPress={() => setShowClothesItems(!showClothesItems)}
+              >
+                <Text style={styles.collapsibleTitle}>My Clothes</Text>
+                <Ionicons 
+                  name={showClothesItems ? "chevron-up" : "chevron-down"} 
+                  size={24} 
+                  color="#6C5CE7" 
+                />
+              </TouchableOpacity>
+              
+              {showClothesItems && (
+                <FlatList
+                  data={clothes}
+                  keyExtractor={(item, index) => index.toString()}
+                  renderItem={({ item, index }) => (
+                    <View style={styles.clothCard}>
+                      <Text style={styles.clothText}>{item}</Text>
+                    </View>
+                  )}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.clothesList}
+                />
+              )}
+              
+              {weeklyclothes && (
+                <>
+                  <TouchableOpacity 
+                    style={styles.collapsibleHeader}
+                    onPress={() => setShowWeeklyItems(!showWeeklyItems)}
+                  >
+                    <Text style={styles.collapsibleTitle}>Weekly Outfit Plan</Text>
+                    <Ionicons 
+                      name={showWeeklyItems ? "chevron-up" : "chevron-down"} 
+                      size={24} 
+                      color="#6C5CE7" 
+                    />
+                  </TouchableOpacity>
+                  
+                  {showWeeklyItems && (
+                    typeof weeklyclothes === 'string' ? (
+                      <View style={styles.clothCard}>
+                        <Text style={styles.clothText}>{weeklyclothes}</Text>
+                      </View>
+                    ) : Array.isArray(weeklyclothes) && (
+                      <FlatList
+                        data={weeklyclothes}
+                        keyExtractor={(item, index) => `weekly-${index}`}
+                        renderItem={({ item }) => (
+                          <View style={styles.clothCard}>
+                            <Text style={styles.clothText}>{typeof item === 'string' ? item : JSON.stringify(item)}</Text>
+                          </View>
+                        )}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.clothesList}
+                      />
+                    )
+                  )}
+                </>
+              )}
               
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => navigation.navigate("Recommendation",{token:token})}
               >
                 <Text style={styles.actionButtonText}>Get Outfit Recommendations</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => navigation.navigate("WeeklyRecommedation",{token:token})}
+              >
+                <Text style={styles.actionButtonText}>Get Weekly Outfit Recommendations</Text>
               </TouchableOpacity>
             </View>
           );
@@ -704,12 +770,12 @@ const Profile = ({ route }) => {
               
               <View style={styles.settingsDivider} />
               
-              <TouchableOpacity style={styles.settingsItem}>
+              {/* <TouchableOpacity style={styles.settingsItem}>
                 <View style={styles.settingsItemContent}>
                   <Text style={styles.settingsItemText}>Notifications</Text>
                   <Text style={styles.settingsItemIcon}>›</Text>
                 </View>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               
               <View style={styles.settingsDivider} />
               
@@ -731,7 +797,10 @@ const Profile = ({ route }) => {
               
               <View style={styles.settingsDivider} />
               
-              <TouchableOpacity style={styles.settingsItem}>
+              <TouchableOpacity 
+                style={styles.settingsItem} 
+                onPress={() => navigation.navigate("AboutUs")}
+              >
                 <View style={styles.settingsItemContent}>
                   <Text style={styles.settingsItemText}>About OutfitAI</Text>
                   <Text style={styles.settingsItemIcon}>›</Text>
@@ -744,7 +813,14 @@ const Profile = ({ route }) => {
             </TouchableOpacity>
           </Animated.View>
         );
-        
+      case 'shop':
+        return (
+          <Animated.View 
+            style={[styles.tabContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+          >
+            <Shop route={{ params: { token } }} />
+          </Animated.View>
+        )
       default:
         return null;
     }
@@ -789,6 +865,13 @@ const Profile = ({ route }) => {
               onPress={() => setActiveTab('favorites')}
             >
               <Text style={[styles.tabButtonText, activeTab === 'favorites' && styles.activeTabButtonText]}>Favorites</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.tabButton, activeTab === 'shop' && styles.activeTabButton]}
+              onPress={() => setActiveTab('shop')}
+            >
+              <Text style={[styles.tabButtonText, activeTab === 'shop' && styles.activeTabButtonText]}>Shop</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -1531,6 +1614,124 @@ const styles = StyleSheet.create({
   eyeIconText: {
     fontSize: 18,
   },
+  // Collapsible Section Styles
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  collapsibleTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  
+  // Shop Tab Styles
+  shopHeader: {
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  shopTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  shopSubtitle: {
+    fontSize: 16,
+    color: '#AAAAAA',
+    textAlign: 'center',
+  },
+  shopCategories: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  categoryCard: {
+    width: '48%',
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  categoryText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  featuredSection: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  featuredTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
+  comingSoonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#6C5CE7',
+    marginBottom: 16,
+  },
+  shopDescription: {
+    color: '#CCCCCC',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  notifyButton: {
+    backgroundColor: '#6C5CE7',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    shadowColor: '#6C5CE7',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  notifyButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  
   // Share Link Modal Styles
   shareContainer: {
     marginBottom: 20,
