@@ -15,7 +15,7 @@ const Stack = createStackNavigator();
 
 const App = () => {
   useEffect(() => {
-    loadAuthToken(); // Set token globally in Axios from AsyncStorage
+    loadAuthToken(); 
   }, []);
 
   return (
@@ -33,5 +33,6 @@ const App = () => {
     </NavigationContainer>
   );
 };
+
 
 export default App;

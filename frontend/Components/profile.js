@@ -185,6 +185,7 @@ const Profile = ({ route }) => {
       
       const data = await response.json();
       if (data && data.Wardrobe && data.Wardrobe.allclothes) {
+        console.log(data.Wardrobe.allclothes)
         setClothes(data.Wardrobe.allclothes);
       } else {
         console.warn('Unexpected data format:', data);
@@ -499,6 +500,90 @@ const Profile = ({ route }) => {
     }
   };
 
+  const parseClothingItems = (clothesData) => {
+    if (!clothesData || !Array.isArray(clothesData) || clothesData.length === 0) {
+      return [];
+    }
+    
+    // Join all array items into a single string if multiple entries exist
+    const combinedString = clothesData.join(' , ');
+    
+    // Split by semicolons and commas to get individual items
+    const items = combinedString
+      .split(/[;,]/)
+      .map(item => item.trim())
+      .filter(item => item && item !== '');
+    
+    return items.map(item => {
+      // Handle format: "Type Color" (e.g., "Shirt Blue")
+      const parts = item.split(' ');
+      
+      if (parts.length < 2) return { type: item, color: '' };
+      
+      // First part is usually the clothing type
+      const type = parts[0];
+      
+      // Rest is the color
+      const color = parts.slice(1).join(' ');
+      
+      return { type, color };
+    });
+  };
+
+  const getColorHex = (colorName) => {
+    if (!colorName) return '#9E9E9E';
+    
+    // Convert color name to lowercase for case-insensitive matching
+    const color = colorName.toLowerCase();
+    
+    // Basic colors
+    if (color.includes('red')) return '#FF5252';
+    if (color.includes('blue')) return '#536DFE';
+    if (color.includes('green')) return '#4CAF50';
+    if (color.includes('yellow')) return '#FFEB3B';
+    if (color.includes('purple')) return '#9C27B0';
+    if (color.includes('pink')) return '#FF4081';
+    if (color.includes('orange')) return '#FF9800';
+    if (color.includes('black')) return '#212121';
+    if (color.includes('white')) return '#FFFFFF';
+    if (color.includes('grey') || color.includes('gray')) return '#9E9E9E';
+    if (color.includes('brown')) return '#795548';
+    
+    // Color variations
+    if (color.includes('light blue')) return '#03A9F4';
+    if (color.includes('dark blue')) return '#3F51B5';
+    if (color.includes('light green')) return '#8BC34A';
+    if (color.includes('dark green')) return '#388E3C';
+    if (color.includes('light purple')) return '#BA68C8';
+    if (color.includes('dark purple')) return '#7B1FA2';
+    if (color.includes('light pink')) return '#F8BBD0';
+    if (color.includes('dark pink')) return '#C2185B';
+    if (color.includes('off-white') || color.includes('off white')) return '#FAFAFA';
+    if (color.includes('multicolor') || color.includes('rainbow')) return '#9C27B0';
+    if (color.includes('striped')) return '#607D8B';
+    
+    // Default color if no match is found
+    return '#9E9E9E';
+  };
+
+  const getItemIcon = (type) => {
+    const itemType = type.toLowerCase();
+    if (itemType.includes('shirt')) return 'shirt';
+    if (itemType.includes('pant') || itemType.includes('trouser')) return 'layers';
+    if (itemType.includes('dress')) return 'woman';
+    if (itemType.includes('jacket')) return 'person';
+    if (itemType.includes('shoe')) return 'footsteps';
+    if (itemType.includes('hat') || itemType.includes('cap')) return 'planet';
+    if (itemType.includes('scarf')) return 'infinite';
+    if (itemType.includes('hoodie') || itemType.includes('sweatshirt')) return 'body';
+    if (itemType.includes('vest')) return 'square';
+    if (itemType.includes('sweater') || itemType.includes('cardigan')) return 'grid';
+    if (itemType.includes('sock')) return 'remove';
+    if (itemType.includes('skirt')) return 'triangle';
+    if (itemType.includes('underwear')) return 'square';
+    return 'help-circle';
+  };
+
   // Render tab content based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
@@ -608,15 +693,38 @@ const Profile = ({ route }) => {
               
               {showClothesItems && (
                 <FlatList
-                  data={clothes}
+                  data={parseClothingItems(clothes)}
                   keyExtractor={(item, index) => index.toString()}
-                  renderItem={({ item, index }) => (
+                  renderItem={({ item }) => (
                     <View style={styles.clothCard}>
-                      <Text style={styles.clothText}>{item}</Text>
+                      <View style={styles.clothItemContainer}>
+                        {item.type && (
+                          <View style={styles.clothItemIconContainer}>
+                            <Ionicons 
+                              name={getItemIcon(item.type)} 
+                              size={20} 
+                              color="#6C5CE7" 
+                            />
+                            <Text style={styles.clothItemType}>{item.type}</Text>
+                          </View>
+                        )}
+                        {item.color && (
+                          <View style={styles.clothItemColorContainer}>
+                            <View 
+                              style={[
+                                styles.clothItemColorDot, 
+                                { backgroundColor: getColorHex(item.color) }
+                              ]} 
+                            />
+                            <Text style={styles.clothItemColor}>{item.color}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
                   )}
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={styles.clothesList}
+                  numColumns={1}
                 />
               )}
               
@@ -802,34 +910,7 @@ const Profile = ({ route }) => {
                 </View>
               </TouchableOpacity>
               
-              <View style={styles.settingsDivider} />
               
-              {/* <TouchableOpacity style={styles.settingsItem}>
-                <View style={styles.settingsItemContent}>
-                  <Text style={styles.settingsItemText}>Notifications</Text>
-                  <Text style={styles.settingsItemIcon}>›</Text>
-                </View>
-              </TouchableOpacity> */}
-              
-              <View style={styles.settingsDivider} />
-              
-              {/* <TouchableOpacity style={styles.settingsItem}>
-                <View style={styles.settingsItemContent}>
-                  <Text style={styles.settingsItemText}>Privacy Settings</Text>
-                  <Text style={styles.settingsItemIcon}>›</Text>
-                </View>
-              </TouchableOpacity>
-              
-              <View style={styles.settingsDivider} />
-              
-              <TouchableOpacity style={styles.settingsItem}>
-                <View style={styles.settingsItemContent}>
-                  <Text style={styles.settingsItemText}>Help & Support</Text>
-                  <Text style={styles.settingsItemIcon}>›</Text>
-                </View>
-              </TouchableOpacity> */}
-              
-              <View style={styles.settingsDivider} />
               
               <TouchableOpacity 
                 style={styles.settingsItem} 
@@ -1387,29 +1468,62 @@ const styles = StyleSheet.create({
   },
   clothesList: {
     paddingVertical: 10,
+    paddingHorizontal: 5,
   },
   clothCard: {
     backgroundColor: '#2A2A2A',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 10,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#333333',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 2,
+        elevation: 3,
       },
     }),
   },
-  clothText: {
+  clothItemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  clothItemIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  clothItemType: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  clothItemColorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(108, 92, 231, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  clothItemColorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  clothItemColor: {
+    color: '#FFFFFF',
+    fontSize: 14,
   },
   weeklyOutfitContainer: {
     marginTop: 10,

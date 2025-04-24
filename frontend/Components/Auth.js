@@ -79,7 +79,6 @@ const handleLogin = async () => {
     const response = await fetch(`${apiUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
 
@@ -90,11 +89,11 @@ const handleLogin = async () => {
     } else {
       console.log('Login successful:', data);
 
-      // Store token globally
-      await AsyncStorage.setItem('token', data.token);
-      setAuthToken(data.token);
-// console.log(data.token)
-      navigation.navigate('Profile',{token:data.token}); // pass token if needed
+      // Store token globally and in AsyncStorage
+      await setAuthToken(data.token);
+      
+      // Navigate to Profile with token
+      navigation.navigate('Profile', { token: data.token });
     }
   } catch (err) {
     console.error('Login error:', err);
