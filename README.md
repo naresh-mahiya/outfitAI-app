@@ -56,8 +56,7 @@ OutfitAI is a comprehensive fashion application that helps users manage their wa
 <table>
 <tr>
 <td><img src="screenshots/favourites.jpg" alt="Favourites" width="200"/></td>
-<td><img src="screenshots/outfit_preview
-.jpg" alt="Additional Feature" width="200"/></td>
+<td><img src="screenshots/outfit_preview.jpg" alt="Additional Feature" width="200"/></td>
 </tr>
 <tr>
 <td>Favourite Outfits</td>
