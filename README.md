@@ -40,13 +40,11 @@ OutfitAI is a comprehensive fashion application that helps users manage their wa
 
 <table>
 <tr>
-<td><img src="screenshots/outfit_recommend.jpg.jpg" alt="Shopping" width="200"/></td>
 <td><img src="screenshots/shop.jpg" alt="Shopping" width="200"/></td>
 <td><img src="screenshots/shop_recommend.jpg" alt="Shopping Recommendations" width="200"/></td>
 <td><img src="screenshots/weekly_recommend.jpg" alt="Weekly Planning" width="200"/></td>
 </tr>
 <tr>
-<td>outfit recommend as per weather and event</td>
 <td>Shopping Interface</td>
 <td>Shopping Recommendations</td>
 <td>Weekly Outfit Planning</td>
