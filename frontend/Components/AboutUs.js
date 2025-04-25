@@ -1,18 +1,18 @@
 import React, { useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  Linking, 
-  TouchableOpacity, 
-  Image, 
-  Animated, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Linking,
+  TouchableOpacity,
+  Image,
+  Animated,
   Dimensions,
   StatusBar,
-  Platform 
+  Platform
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -20,7 +20,7 @@ const AboutUs = ({ navigation }) => {
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(30)).current;
-  
+
   useEffect(() => {
     // Start animations when component mounts
     Animated.parallel([
@@ -36,9 +36,13 @@ const AboutUs = ({ navigation }) => {
       })
     ]).start();
   }, []);
-  
+
   const handleEmailPress = (email) => {
-    Linking.openURL(`mailto:${email}`);
+    Linking.openURL(mailto: ${ email });
+  };
+
+  const handleSocialPress = (url) => {
+    Linking.openURL(url);
   };
 
   return (
@@ -46,28 +50,28 @@ const AboutUs = ({ navigation }) => {
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          
+
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../assets/logo_main.png')} 
+            <Image
+              source={require('../assets/logo_main.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
-          
+
           <Text style={styles.headerTitle}>About OutfitAI</Text>
           <Text style={styles.headerText}>
             Revolutionizing fashion with AI technology
           </Text>
         </View>
 
-        <Animated.View 
+        <Animated.View
           style={[styles.sectionContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
         >
           <View style={styles.section}>
@@ -103,7 +107,7 @@ const AboutUs = ({ navigation }) => {
               <Ionicons name="people" size={28} color="#6c5ce7" />
             </View>
             <Text style={styles.sectionTitle}>Our Team</Text>
-            
+
             <View style={styles.teamList}>
               <View style={styles.teamMemberCard}>
                 <View style={styles.teamMemberHeader}>
@@ -115,6 +119,20 @@ const AboutUs = ({ navigation }) => {
                     <TouchableOpacity onPress={() => handleEmailPress('adityakurani26@gmail.com')}>
                       <Text style={styles.email}>adityakurani26@gmail.com</Text>
                     </TouchableOpacity>
+                    <View style={styles.socialLinks}>
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialPress('https://www.linkedin.com/in/aditya-kurani-818668176/')}
+                      >
+                        <FontAwesome name="linkedin-square" size={20} color="#6c5ce7" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialPress('https://www.instagram.com/aditya_kurani_26/')}
+                      >
+                        <FontAwesome name="instagram" size={20} color="#6c5ce7" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
                 <Text style={styles.teamMemberRole}>
@@ -130,18 +148,33 @@ const AboutUs = ({ navigation }) => {
                   </View>
                   <View style={styles.teamMemberInfo}>
                     <Text style={styles.memberName}>Naresh Mahiya</Text>
-                    <TouchableOpacity onPress={() => handleEmailPress('naresh_mahiya@gmail.com')}>
-                      <Text style={styles.email}>naresh_mahiya@gmail.com</Text>
+                    <TouchableOpacity onPress={() => handleEmailPress('nareshmahiya2017@gmail.com')}>
+                      <Text style={styles.email}>nareshmahiya2017@gmail.com</Text>
                     </TouchableOpacity>
+                    <View style={styles.socialLinks}>
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialPress('https://www.linkedin.com/in/naresh-mahiya-1ba039254/')}
+                      >
+                        <FontAwesome name="linkedin-square" size={20} color="#6c5ce7" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialPress('https://www.instagram.com/naresh.mahiya/')}
+                      >
+                        <FontAwesome name="instagram" size={20} color="#6c5ce7" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
                 <Text style={styles.teamMemberRole}>
-                  AI model development for Cloth identification and shopping.
+                Implemented backend integration for AI models  for cloth identification and shopping.
+                Built APIs to facilitate seamless communication between the AI models and frontend, enabling real-time recommendations.
                 </Text>
               </View>
             </View>
           </View>
-          
+
           <View style={styles.section}>
             <View style={styles.sectionIconContainer}>
               <Ionicons name="code-slash" size={28} color="#6c5ce7" />
@@ -155,7 +188,7 @@ const AboutUs = ({ navigation }) => {
               ))}
             </View>
           </View>
-          
+
           <View style={styles.footer}>
             <Text style={styles.footerText}> 2025 OutfitAI</Text>
             <Text style={styles.footerVersion}>Version 1.0.0</Text>
@@ -293,6 +326,14 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 14,
     color: '#6c5ce7',
+    marginBottom: 5,
+  },
+  socialLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  socialButton: {
+    marginRight: 12,
   },
   teamMemberRole: {
     fontSize: 15,
