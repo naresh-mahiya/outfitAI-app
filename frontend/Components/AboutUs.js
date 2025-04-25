@@ -38,8 +38,9 @@ const AboutUs = ({ navigation }) => {
   }, []);
 
   const handleEmailPress = (email) => {
-    Linking.openURL(mailto: ${ email });
+    Linking.openURL(`mailto:${email}`);
   };
+  
 
   const handleSocialPress = (url) => {
     Linking.openURL(url);
