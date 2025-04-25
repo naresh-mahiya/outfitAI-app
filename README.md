@@ -19,6 +19,54 @@ OutfitAI is a comprehensive fashion application that helps users manage their wa
 - **Shopping Integration**: Get outfit suggestions from popular e-commerce platforms Amazon,Myntra and Flipkart
 - **Smart Outfit Matching**: AI-powered outfit combinations based on your existing wardrobe
 
+## Screenshots
+
+### Main Features
+
+<table>
+<tr>
+<td><img src="screenshots/wardrob.jpg" alt="Wardrobe Management" width="200"/></td>
+<td><img src="screenshots/mycloths.jpg" alt="My Clothes" width="200"/></td>
+<td><img src="screenshots/outfit_recommend.jpg" alt="Outfit Recommendations" width="200"/></td>
+</tr>
+<tr>
+<td>Wardrobe Management</td>
+<td>My Clothes Collection</td>
+<td>AI Outfit Recommendations</td>
+</tr>
+</table>
+
+### Shopping & Planning
+
+<table>
+<tr>
+<td><img src="screenshots/outfit_recommend.jpg.jpg" alt="Shopping" width="200"/></td>
+<td><img src="screenshots/shop.jpg" alt="Shopping" width="200"/></td>
+<td><img src="screenshots/shop_recommend.jpg" alt="Shopping Recommendations" width="200"/></td>
+<td><img src="screenshots/weekly_recommend.jpg" alt="Weekly Planning" width="200"/></td>
+</tr>
+<tr>
+<td>outfit recommend as per weather and event</td>
+<td>Shopping Interface</td>
+<td>Shopping Recommendations</td>
+<td>Weekly Outfit Planning</td>
+</tr>
+</table>
+
+### Additional Features
+
+<table>
+<tr>
+<td><img src="screenshots/favourites.jpg" alt="Favourites" width="200"/></td>
+<td><img src="screenshots/outfit_preview
+.jpg" alt="Additional Feature" width="200"/></td>
+</tr>
+<tr>
+<td>Favourite Outfits</td>
+<td>Additional Feature</td>
+</tr>
+</table>
+
 ## Tech Stack
 
 ### Frontend
